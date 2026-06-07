@@ -2,13 +2,15 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../models/prayer_model.dart';
 import '../services/location_service.dart';
 import '../services/prayer_service.dart';
-import '../widgets/next_prayer_banner.dart';
-import '../widgets/prayer_list.dart';
-import '../widgets/hijri_date_card.dart';
+import '../utils/hijri_converter.dart';
 import '../utils/theme.dart';
+import '../utils/prayer_formatter.dart';
+import '../widgets/prayer_list.dart';
 import 'qibla_screen.dart';
 import 'mosques_screen.dart';
 import 'calendar_screen.dart';
@@ -28,11 +30,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _countdownTimer;
 
   static const _navItems = [
-    _NavItem(Icons.access_time_outlined, Icons.access_time_filled,   'Prières'),
-    _NavItem(Icons.explore_outlined,      Icons.explore,              'Qibla'),
-    _NavItem(Icons.mosque_outlined,       Icons.mosque,               'Mosquées'),
-    _NavItem(Icons.calendar_month_outlined,Icons.calendar_month,      'Calendrier'),
-    _NavItem(Icons.settings_outlined,     Icons.settings,             'Réglages'),
+    _NavItem(Icons.access_time_outlined,      Icons.access_time_filled,   'Prières'),
+    _NavItem(Icons.explore_outlined,           Icons.explore,              'Qibla'),
+    _NavItem(Icons.mosque_outlined,            Icons.mosque,               'Mosquées'),
+    _NavItem(Icons.calendar_month_outlined,    Icons.calendar_month,       'Calendrier'),
+    _NavItem(Icons.settings_outlined,          Icons.settings,             'Réglages'),
   ];
 
   @override
@@ -42,8 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _init() async {
-    final loc   = context.read<LocationService>();
-    final pray  = context.read<PrayerService>();
+    final loc  = context.read<LocationService>();
+    final pray = context.read<PrayerService>();
     await pray.loadSettings();
     await loc.fetchLocation();
     if (loc.hasLocation) {
@@ -87,7 +89,6 @@ class _HomeScreenState extends State<HomeScreen> {
               width: colW,
               height: constraints.maxHeight,
               child: MediaQuery(
-                // Reserve space for the floating nav bar in all child screens
                 data: mq.copyWith(
                   padding: mq.padding.copyWith(bottom: 96),
                 ),
@@ -152,14 +153,14 @@ class _FloatingNavState extends State<_FloatingNav> {
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, math.max(bottom + 12, 20)),
       child: Container(
-        height: _itemHeight + 16, // fixed: 8px top + 8px bottom padding
+        height: _itemHeight + 16,
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(32),
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               blurRadius: 40,
               offset: const Offset(0, 10),
             ),
@@ -168,7 +169,7 @@ class _FloatingNavState extends State<_FloatingNav> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final totalW = constraints.maxWidth;
-            final slotW = totalW / n;
+            final slotW  = totalW / n;
             final indicatorLeft =
                 slotW * widget.currentIndex + (slotW - _indicatorW) / 2;
 
@@ -196,7 +197,7 @@ class _FloatingNavState extends State<_FloatingNav> {
                 // Items
                 Row(
                   children: List.generate(n, (i) {
-                    final item = widget.items[i];
+                    final item     = widget.items[i];
                     final selected = i == widget.currentIndex;
                     return Expanded(
                       child: GestureDetector(
@@ -249,245 +250,223 @@ class _FloatingNavState extends State<_FloatingNav> {
 }
 
 // ── Prayer home ───────────────────────────────────────────────────────────────
+// Structure inspirée de SalahTime : horloge live géante + date hégirienne
+// + section "prochaine prière" + liste des horaires.
 
 class _PrayerHome extends StatelessWidget {
   const _PrayerHome();
+
+  /// "dimanche 7 juin 2026" → "Dimanche 7 Juin 2026"
+  static String _titleCase(String s) =>
+      s.split(' ').map((w) => w.isEmpty ? w : w[0].toUpperCase() + w.substring(1)).join(' ');
 
   @override
   Widget build(BuildContext context) {
     final location = context.watch<LocationService>();
     final prayers  = context.watch<PrayerService>();
+    final now      = DateTime.now();
+    final topPad   = MediaQuery.of(context).viewPadding.top;
+    final hijri    = HijriDate.fromGregorian(now);
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(child: _PrayerHeader(location: location)),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final city = location.hasLocation && location.cityName.isNotEmpty
+        ? location.cityName
+        : 'Mayotte';
+
+    final dateStr = _titleCase(
+      DateFormat('EEEE d MMMM yyyy', 'fr_FR').format(now),
+    );
+
+    final clockStr = DateFormat('HH:mm:ss').format(now);
+
+    return SingleChildScrollView(
+      physics: const ClampingScrollPhysics(),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24, topPad + 24, 24, 96),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+
+            // ── Header : ville + date ─────────────────────────────────
+            Row(
               children: [
-                const HijriDateCard(),
-                const SizedBox(height: 16),
-                if (location.isLoading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.green,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  )
-                else if (prayers.nextPrayer != null)
-                  NextPrayerBanner(
-                    prayer: prayers.nextPrayer!,
-                    timeToNext: prayers.timeToNext,
-                  ),
-              ],
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Text(
-              'HORAIRES DU JOUR',
-              style: TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.4,
-              ),
-            ),
-          ),
-        ),
-        if (prayers.todayPrayers.isNotEmpty)
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: PrayerList(prayers: prayers.todayPrayers),
-          ),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 28)),
-      ],
-    );
-  }
-}
-
-// ── Header with Islamic geometric pattern ─────────────────────────────────────
-
-class _PrayerHeader extends StatelessWidget {
-  final LocationService location;
-  const _PrayerHeader({required this.location});
-
-  @override
-  Widget build(BuildContext context) {
-    final topPad = MediaQuery.of(context).viewPadding.top;
-    final prayers = context.read<PrayerService>();
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, topPad + 20, 20, 28),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF081A10), Color(0xFF0A1628), AppColors.bgDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: [0, 0.5, 1],
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Subtle Islamic geometric pattern
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _StarPatternPainter(
-                AppColors.green.withOpacity(0.07),
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top bar
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              location.isUsingFallback
-                                  ? Icons.location_off_outlined
-                                  : Icons.gps_fixed,
-                              size: 13,
-                              color: location.isUsingFallback
-                                  ? AppColors.textMuted
-                                  : AppColors.greenLight,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              location.hasLocation
-                                  ? (location.cityName.isNotEmpty
-                                      ? location.cityName
-                                      : 'Mayotte')
-                                  : 'Mayotte',
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'الصلوات الخمس',
-                          style: AppFonts.arabic(
-                            color: AppColors.textPrimary,
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            height: 1.1,
-                          ),
-                          textDirection: TextDirection.rtl,
-                        ),
-                        const Text(
-                          'Les cinq prières',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Refresh button
-                  _HeaderButton(
-                    icon: location.isLoading
-                        ? Icons.hourglass_top_outlined
-                        : Icons.my_location,
-                    onTap: () async {
-                      await location.fetchLocation();
-                      if (location.hasLocation) {
-                        await prayers.calculate(
+                GestureDetector(
+                  onTap: () async {
+                    await location.fetchLocation();
+                    if (location.hasLocation) {
+                      await context.read<PrayerService>().calculate(
                             location.latitude!, location.longitude!);
-                      }
-                    },
+                    }
+                  },
+                  child: Row(
+                    children: [
+                      Icon(
+                        location.isLoading
+                            ? Icons.hourglass_top_outlined
+                            : location.isUsingFallback
+                                ? Icons.location_off_outlined
+                                : Icons.gps_fixed,
+                        size: 12,
+                        color: location.isUsingFallback
+                            ? AppColors.textMuted
+                            : AppColors.greenLight,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        city,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+                const Spacer(),
+                Text(
+                  dateStr,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ).animate().fadeIn(duration: 400.ms),
+
+            const SizedBox(height: 48),
+
+            // ── Date hégirienne ───────────────────────────────────────
+            Text(
+              '${hijri.format()} H',
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 21,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.4,
               ),
+              textAlign: TextAlign.center,
+            )
+                .animate()
+                .fadeIn(duration: 450.ms, delay: 60.ms)
+                .slideY(begin: 0.06, end: 0, duration: 450.ms, delay: 60.ms),
+
+            const SizedBox(height: 8),
+
+            // ── Horloge live ──────────────────────────────────────────
+            Text(
+              clockStr,
+              style: AppFonts.mono(
+                color: AppColors.textPrimary,
+                fontSize: 72,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -2,
+                height: 1,
+              ),
+              textAlign: TextAlign.center,
+            )
+                .animate()
+                .fadeIn(duration: 500.ms, delay: 100.ms)
+                .slideY(begin: 0.08, end: 0, duration: 500.ms, delay: 100.ms, curve: Curves.easeOut),
+
+            const SizedBox(height: 36),
+
+            // ── Séparateur ────────────────────────────────────────────
+            const Divider(color: AppColors.border, height: 1)
+                .animate()
+                .fadeIn(duration: 400.ms, delay: 160.ms),
+
+            const SizedBox(height: 28),
+
+            // ── Prochaine prière ──────────────────────────────────────
+            if (location.isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: CircularProgressIndicator(
+                  color: AppColors.green,
+                  strokeWidth: 2,
+                ),
+              )
+            else if (prayers.nextPrayer != null) ...[
+              const Text(
+                'PROCHAINE PRIÈRE',
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.6,
+                ),
+              )
+                  .animate()
+                  .fadeIn(duration: 380.ms, delay: 200.ms),
+
+              const SizedBox(height: 10),
+
+              Text(
+                prayers.nextPrayer!.name.displayName,
+                style: const TextStyle(
+                  color: AppColors.greenLight,
+                  fontSize: 42,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                ),
+              )
+                  .animate()
+                  .fadeIn(duration: 480.ms, delay: 240.ms)
+                  .slideY(begin: 0.06, end: 0, duration: 480.ms, delay: 240.ms, curve: Curves.easeOut),
+
+              const SizedBox(height: 6),
+
+              Text(
+                PrayerFormatter.formatCountdown(prayers.timeToNext),
+                style: AppFonts.mono(
+                  color: AppColors.textSecondary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: -0.5,
+                ),
+              )
+                  .animate()
+                  .fadeIn(duration: 380.ms, delay: 280.ms),
             ],
-          )
-              .animate()
-              .fadeIn(duration: 500.ms)
-              .slideY(begin: -0.04, end: 0, duration: 500.ms),
-        ],
-      ),
-    );
-  }
-}
 
-class _HeaderButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _HeaderButton({required this.icon, required this.onTap});
+            const SizedBox(height: 44),
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceLo,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+            // ── Horaires du jour ──────────────────────────────────────
+            if (prayers.todayPrayers.isNotEmpty) ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: const Text(
+                  'HORAIRES DU JOUR',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              ...prayers.todayPrayers.asMap().entries.map((e) {
+                final i = e.key;
+                final p = e.value;
+                final next = i + 1 < prayers.todayPrayers.length
+                    ? prayers.todayPrayers[i + 1].time
+                    : null;
+                final gap = next != null
+                    ? (next.difference(p.time).inMinutes / 60 * 6.0)
+                        .clamp(4.0, 16.0)
+                    : 4.0;
+                return PrayerTile(prayer: p, bottomMargin: gap)
+                    .animate(delay: (i * 55).ms)
+                    .fadeIn(duration: 380.ms, curve: Curves.easeOut)
+                    .slideX(begin: -0.06, end: 0, duration: 380.ms, curve: Curves.easeOut);
+              }),
+            ],
+          ],
         ),
-        child: Icon(icon, size: 18, color: AppColors.textSecondary),
       ),
     );
   }
-}
-
-// ── Islamic 8-pointed star pattern ───────────────────────────────────────────
-
-class _StarPatternPainter extends CustomPainter {
-  final Color color;
-  _StarPatternPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8;
-
-    const step = 54.0;
-    const r = 16.0;
-
-    for (double x = step / 2; x < size.width + step; x += step) {
-      for (double y = step / 2; y < size.height + step; y += step) {
-        _drawStar(canvas, paint, Offset(x, y), r);
-      }
-    }
-  }
-
-  void _drawStar(Canvas canvas, Paint paint, Offset c, double r) {
-    const n = 8;
-    final path = Path();
-    for (int i = 0; i < n * 2; i++) {
-      final angle = i * math.pi / n - math.pi / 2;
-      final radius = i.isEven ? r : r * 0.38;
-      final x = c.dx + radius * math.cos(angle);
-      final y = c.dy + radius * math.sin(angle);
-      if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
-    }
-    path.close();
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_StarPatternPainter o) => o.color != color;
 }
