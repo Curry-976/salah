@@ -47,14 +47,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  assets:
-    - assets/images/
-    - assets/sounds/
-
-  fonts:
-    - family: Amiri
-      fonts:
-        - asset: assets/fonts/Amiri-Regular.ttf
-        - asset: assets/fonts/Amiri-Bold.ttf
-          weight: 700

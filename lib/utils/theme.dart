@@ -13,7 +13,6 @@ class AppTheme {
           secondary: _secondaryGold,
           brightness: Brightness.light,
         ),
-        fontFamily: 'Amiri',
         appBarTheme: const AppBarTheme(
           centerTitle: true,
           elevation: 0,
@@ -37,7 +36,6 @@ class AppTheme {
           surface: _surfaceDark,
           background: _backgroundDark,
         ),
-        fontFamily: 'Amiri',
         scaffoldBackgroundColor: _backgroundDark,
         appBarTheme: const AppBarTheme(
           centerTitle: true,
