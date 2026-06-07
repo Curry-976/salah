@@ -47,6 +47,9 @@ const List<Mosque> mosqueesMayotte = [
   // --- Dembeni ---
   Mosque(name: 'Mosquée de Dembeni',          sector: 'Dembeni',   lat: -12.8333, lng: 45.2333),
 
+  // --- Bandrélé ---
+  Mosque(name: "Mosquée de Bandrélé",         sector: 'Bandrélé',  lat: -12.9080, lng: 45.1930),
+
   // --- Petite-Terre (Dzaoudzi / Pamandzi) ---
   Mosque(name: 'Mosquée de Dzaoudzi',         sector: 'Dzaoudzi',  lat: -12.7833, lng: 45.2667),
   Mosque(name: 'Mosquée de Pamandzi',         sector: 'Pamandzi',  lat: -12.7950, lng: 45.2850),

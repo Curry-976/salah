@@ -154,16 +154,16 @@ class _MosquesScreenState extends State<MosquesScreen> {
               if (_route != null)
                 PolylineLayer(
                   polylines: [
+                    // Bordure en dessous, ligne principale par-dessus
+                    Polyline(
+                      points: _route!.points,
+                      color: Colors.white.withOpacity(0.6),
+                      strokeWidth: 9,
+                    ),
                     Polyline(
                       points: _route!.points,
                       color: Colors.blue.shade700,
                       strokeWidth: 5,
-                    ),
-                    // Bordure blanche pour lisibilité
-                    Polyline(
-                      points: _route!.points,
-                      color: Colors.white.withOpacity(0.5),
-                      strokeWidth: 8,
                     ),
                   ],
                 ),
@@ -233,7 +233,11 @@ class _MosquesScreenState extends State<MosquesScreen> {
             top: 8,
             left: 8,
             right: 60,
-            child: _SourceBanner(count: _filtered.length, source: _source),
+            child: _SourceBanner(
+              count: _filtered.length,
+              total: _mosques.length,
+              source: _source,
+            ),
           ),
           // Fiche mosquée + itinéraire
           if (_selectedMosque != null)
@@ -257,10 +261,12 @@ class _MosquesScreenState extends State<MosquesScreen> {
                 onGetRoute: () => _fetchRoute(location),
                 onNavigate: () => _openNavigation(_selectedMosque!),
                 onModeChanged: (mode) {
+                  final hadRoute = _route != null;
                   setState(() {
                     _travelMode = mode;
                     _clearRoute();
                   });
+                  if (hadRoute) _fetchRoute(location);
                 },
               ),
             ),
@@ -547,8 +553,9 @@ class _RouteInfo extends StatelessWidget {
 
 class _SourceBanner extends StatelessWidget {
   final int count;
+  final int total;
   final MosqueSource source;
-  const _SourceBanner({required this.count, required this.source});
+  const _SourceBanner({required this.count, required this.total, required this.source});
 
   @override
   Widget build(BuildContext context) {
@@ -557,6 +564,9 @@ class _SourceBanner extends StatelessWidget {
       MosqueSource.cache => ('Cache OSM', Colors.orange.shade700),
       MosqueSource.fallback => ('Liste de base', Colors.grey.shade600),
     };
+    final countLabel = count < total
+        ? '$count / $total mosquées'
+        : '$total mosquée${total > 1 ? "s" : ""}';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -570,7 +580,7 @@ class _SourceBanner extends StatelessWidget {
           Icon(Icons.circle, size: 8, color: color),
           const SizedBox(width: 6),
           Text(
-            '$count mosquée${count > 1 ? "s" : ""} · $label',
+            '$countLabel · $label',
             style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
