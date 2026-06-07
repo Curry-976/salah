@@ -14,7 +14,7 @@ import 'utils/theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
-  await initializeDateFormatting('fr', null);
+  await initializeDateFormatting('fr_FR', null);
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

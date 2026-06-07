@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
 import '../utils/hijri_converter.dart';
 import '../utils/theme.dart';
+
+// French date helpers — no intl locale initialization required
+const _frMonths = [
+  'janvier','février','mars','avril','mai','juin',
+  'juillet','août','septembre','octobre','novembre','décembre',
+];
+const _frMonthsShort = [
+  'jan.','fév.','mar.','avr.','mai','juin',
+  'juil.','août','sep.','oct.','nov.','déc.',
+];
+const _frDays = [
+  'lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche',
+];
+String _frFullDate(DateTime d) =>
+    '${_frDays[d.weekday - 1]} ${d.day} ${_frMonths[d.month - 1]} ${d.year}';
+String _frMonthYear(DateTime d) =>
+    '${_frMonths[d.month - 1]} ${d.year}';
+String _frShortDate(DateTime d) =>
+    '${d.day} ${_frMonthsShort[d.month - 1]} ${d.year}';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -113,7 +131,7 @@ class _HijriHeader extends StatelessWidget {
                     .slideX(begin: -0.04, end: 0, duration: 400.ms, delay: 60.ms),
                 const SizedBox(height: 5),
                 Text(
-                  DateFormat('EEEE d MMMM yyyy', 'fr_FR').format(DateTime.now()),
+                  _frFullDate(DateTime.now()),
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 13,
@@ -154,7 +172,7 @@ class _MonthNavigator extends StatelessWidget {
           Column(
             children: [
               Text(
-                DateFormat('MMMM yyyy', 'fr_FR').format(focusedDay),
+                _frMonthYear(focusedDay),
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               Text(
@@ -310,7 +328,7 @@ class _SelectedDayInfo extends StatelessWidget {
             children: [
               const Text('Grégorien', style: TextStyle(fontSize: 12)),
               Text(
-                DateFormat('d MMM yyyy', 'fr_FR').format(gregorian),
+                _frShortDate(gregorian),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
@@ -353,7 +371,6 @@ class _IslamicEventsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final hijriYear = HijriDate.fromGregorian(now).year;
-    final fmt = DateFormat('d MMM yyyy', 'fr_FR');
 
     // Compute Gregorian date for each event; if already past, use next hijri year
     final events = _defs.map((def) {
@@ -392,7 +409,7 @@ class _IslamicEventsCard extends StatelessWidget {
                   style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                 ),
                 trailing: Text(
-                  fmt.format(e.greg),
+                  _frShortDate(e.greg),
                   style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
               ),
