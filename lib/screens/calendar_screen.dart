@@ -91,7 +91,6 @@ class _HijriHeader extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 height: 1,
               ),
-              textDirection: TextDirection.rtl,
             ).animate().fadeIn(duration: 700.ms, curve: Curves.easeOut),
           ),
           // Content
@@ -108,7 +107,6 @@ class _HijriHeader extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     height: 1.1,
                   ),
-                  textDirection: TextDirection.rtl,
                 )
                     .animate()
                     .fadeIn(duration: 400.ms, delay: 60.ms)
