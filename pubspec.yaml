@@ -10,7 +10,7 @@ dependencies:
     sdk: flutter
 
   # Prayer times calculation
-  adhan: ^1.1.0
+  adhan: ^2.0.0+1
 
   # Location
   geolocator: ^10.1.0
