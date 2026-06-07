@@ -7,6 +7,7 @@ import '../widgets/next_prayer_banner.dart';
 import '../widgets/prayer_list.dart';
 import '../widgets/hijri_date_card.dart';
 import 'qibla_screen.dart';
+import 'mosques_screen.dart';
 import 'calendar_screen.dart';
 import 'settings_screen.dart';
 
@@ -60,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final screens = [
       const _PrayerHome(),
       const QiblaScreen(),
+      const MosquesScreen(),
       const CalendarScreen(),
       const SettingsScreen(),
     ];
@@ -79,6 +81,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.explore_outlined),
             selectedIcon: Icon(Icons.explore),
             label: 'Qibla',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.mosque_outlined),
+            selectedIcon: Icon(Icons.mosque),
+            label: 'Mosquées',
           ),
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),

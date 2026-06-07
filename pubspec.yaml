@@ -1,5 +1,5 @@
-name: salah
-description: Application de prière islamique - Horaires, Qibla, Adhan et Calendrier hégirien
+﻿name: salah
+description: Application de prière islamique - Mayotte
 version: 1.0.0+1
 
 environment:
@@ -24,7 +24,6 @@ dependencies:
   flutter_local_notifications: ^17.0.0
   timezone: ^0.9.0
 
-
   # State management
   provider: ^6.1.0
 
@@ -33,6 +32,10 @@ dependencies:
 
   # Permissions
   permission_handler: ^11.0.0
+
+  # Map
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
 
   # UI
   flutter_svg: ^2.0.9
