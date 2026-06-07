@@ -1,3 +1,4 @@
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import '../models/prayer_model.dart';
@@ -9,6 +10,7 @@ class NotificationService {
   final _plugin = FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
+    if (kIsWeb) return;
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -22,6 +24,7 @@ class NotificationService {
   }
 
   Future<void> scheduleAllPrayers(List<PrayerTime> prayers) async {
+    if (kIsWeb) return;
     await _plugin.cancelAll();
 
     for (final prayer in prayers) {
@@ -63,5 +66,8 @@ class NotificationService {
     );
   }
 
-  Future<void> cancelAll() => _plugin.cancelAll();
+  Future<void> cancelAll() async {
+    if (kIsWeb) return;
+    await _plugin.cancelAll();
+  }
 }

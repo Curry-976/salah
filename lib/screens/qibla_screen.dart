@@ -1,4 +1,5 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:flutter_qiblah/flutter_qiblah.dart';
@@ -11,6 +12,26 @@ class QiblaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Direction Qibla')),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.explore_off, size: 64, color: AppColors.gold),
+              SizedBox(height: 16),
+              Text(
+                'La boussole Qibla nécessite\nun appareil mobile',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final location = context.watch<LocationService>();
 
     return Scaffold(
@@ -69,17 +90,14 @@ class _QiblaCompass extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Compass rose
                   Transform.rotate(
                     angle: qiblah.direction * (math.pi / 180) * -1,
                     child: _CompassRose(),
                   ),
-                  // Qibla needle
                   Transform.rotate(
                     angle: angle,
                     child: _QiblahNeedle(),
                   ),
-                  // Center dot
                   Container(
                     width: 16,
                     height: 16,
@@ -160,7 +178,6 @@ class _QiblahNeedle extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Kaaba icon at tip
         const Text('🕋', style: TextStyle(fontSize: 28)),
         Container(
           width: 4,

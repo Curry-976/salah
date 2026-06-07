@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
@@ -47,7 +48,9 @@ class LocationService extends ChangeNotifier {
       _latitude = position.latitude;
       _longitude = position.longitude;
 
-      await _fetchCityName();
+      if (!kIsWeb) {
+        await _fetchCityName();
+      }
     } catch (e) {
       _error = 'Impossible d\'obtenir la position';
     } finally {
