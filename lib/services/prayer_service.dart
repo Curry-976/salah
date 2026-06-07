@@ -11,6 +11,10 @@ class PrayerService extends ChangeNotifier {
   PrayerTime? _nextPrayer;
   Duration _timeToNext = Duration.zero;
 
+  double? _latitude;
+  double? _longitude;
+  DateTime? _calculatedDate;
+
   PrayerTimes? get prayerTimes => _prayerTimes;
   PrayerSettings get settings => _settings;
   List<PrayerTime> get todayPrayers => _todayPrayers;
@@ -18,6 +22,10 @@ class PrayerService extends ChangeNotifier {
   Duration get timeToNext => _timeToNext;
 
   Future<void> calculate(double latitude, double longitude) async {
+    _latitude = latitude;
+    _longitude = longitude;
+    _calculatedDate = DateTime.now();
+
     final coords = Coordinates(latitude, longitude);
     final params = _settings.method.getParameters();
     params.madhab = _settings.madhab;
@@ -43,11 +51,21 @@ class PrayerService extends ChangeNotifier {
       PrayerTime(name: PrayerName.isha, time: _prayerTimes!.isha),
     ];
 
+    // Identify next prayer to mark it in the list
+    PrayerName? nextName;
+    for (final p in times) {
+      if (p.time.isAfter(now)) {
+        nextName = p.name;
+        break;
+      }
+    }
+
     _todayPrayers = times
         .map((p) => PrayerTime(
               name: p.name,
               time: p.time,
               isPast: p.time.isBefore(now),
+              isNext: p.name == nextName,
             ))
         .toList();
   }
@@ -65,15 +83,47 @@ class PrayerService extends ChangeNotifier {
         return;
       }
     }
-    // All prayers passed, next is Fajr tomorrow
-    _nextPrayer = null;
-    _timeToNext = Duration.zero;
+    // All prayers passed — show tomorrow's Fajr
+    _computeTomorrowFajr();
+  }
+
+  void _computeTomorrowFajr() {
+    if (_latitude == null || _longitude == null) {
+      _nextPrayer = null;
+      _timeToNext = Duration.zero;
+      return;
+    }
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    final coords = Coordinates(_latitude!, _longitude!);
+    final params = _settings.method.getParameters();
+    params.madhab = _settings.madhab;
+    final tomorrowTimes = PrayerTimes(coords, DateComponents.from(tomorrow), params);
+    final fajr = tomorrowTimes.fajr;
+    _nextPrayer = PrayerTime(
+      name: PrayerName.fajr,
+      time: fajr,
+      isNext: true,
+      isTomorrow: true,
+    );
+    _timeToNext = fajr.difference(DateTime.now());
   }
 
   void updateTimeToNext() {
+    // Recalculate automatically when the day changes
+    if (_latitude != null && _longitude != null && _calculatedDate != null) {
+      final now = DateTime.now();
+      if (now.day != _calculatedDate!.day ||
+          now.month != _calculatedDate!.month ||
+          now.year != _calculatedDate!.year) {
+        calculate(_latitude!, _longitude!);
+        return;
+      }
+    }
+
     if (_nextPrayer == null) return;
     final remaining = _nextPrayer!.time.difference(DateTime.now());
     if (remaining.isNegative) {
+      _buildPrayerList();
       _findNextPrayer();
     } else {
       _timeToNext = remaining;
@@ -87,7 +137,11 @@ class PrayerService extends ChangeNotifier {
     await prefs.setInt('calc_method', _settings.method.index);
     await prefs.setInt('madhab', _settings.madhab.index);
     await prefs.setBool('notifications', _settings.notificationsEnabled);
-    notifyListeners();
+    if (_latitude != null && _longitude != null) {
+      await calculate(_latitude!, _longitude!);
+    } else {
+      notifyListeners();
+    }
   }
 
   Future<void> loadSettings() async {

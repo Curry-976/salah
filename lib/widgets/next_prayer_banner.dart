@@ -36,7 +36,7 @@ class NextPrayerBanner extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Prochaine prière',
+            prayer.isTomorrow ? 'Fajr · demain' : 'Prochaine prière',
             style: TextStyle(
               color: Colors.white.withOpacity(0.8),
               fontSize: 14,

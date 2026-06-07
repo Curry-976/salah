@@ -124,6 +124,19 @@ class _PrayerHome extends StatelessWidget {
             centerTitle: true,
           ),
           actions: [
+            if (!location.isLoading)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  location.isUsingFallback
+                      ? Icons.location_off_outlined
+                      : Icons.gps_fixed,
+                  size: 18,
+                  color: location.isUsingFallback
+                      ? Colors.white54
+                      : Colors.greenAccent,
+                ),
+              ),
             IconButton(
               icon: const Icon(Icons.my_location),
               onPressed: () async {

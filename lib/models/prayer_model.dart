@@ -45,12 +45,14 @@ class PrayerTime {
   final DateTime time;
   final bool isNext;
   final bool isPast;
+  final bool isTomorrow;
 
   const PrayerTime({
     required this.name,
     required this.time,
     this.isNext = false,
     this.isPast = false,
+    this.isTomorrow = false,
   });
 }
 

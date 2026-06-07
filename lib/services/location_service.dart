@@ -12,12 +12,14 @@ class LocationService extends ChangeNotifier {
   String _cityName = '';
   String _error = '';
   bool _isLoading = false;
+  bool _isUsingFallback = false;
 
   double? get latitude => _latitude;
   double? get longitude => _longitude;
   String get cityName => _cityName;
   String get error => _error;
   bool get isLoading => _isLoading;
+  bool get isUsingFallback => _isUsingFallback;
   bool get hasLocation => _latitude != null && _longitude != null;
 
   Future<void> fetchLocation() async {
@@ -46,6 +48,7 @@ class LocationService extends ChangeNotifier {
 
       _latitude = position.latitude;
       _longitude = position.longitude;
+      _isUsingFallback = false;
 
       if (!kIsWeb) {
         await _fetchCityName();
@@ -64,6 +67,7 @@ class LocationService extends ChangeNotifier {
     _cityName = 'Mayotte';
     _error = '';
     _isLoading = false;
+    _isUsingFallback = true;
   }
 
   Future<void> _fetchCityName() async {
