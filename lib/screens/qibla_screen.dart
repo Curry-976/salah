@@ -1,55 +1,343 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:flutter_qiblah/flutter_qiblah.dart';
 import 'package:provider/provider.dart';
 import '../services/location_service.dart';
 import '../utils/theme.dart';
 
+// ── Haversine helpers ─────────────────────────────────────────────────────────
+
+const _meccaLat = 21.4225;
+const _meccaLng = 39.8262;
+
+double _distanceKm(double lat, double lng) {
+  const R = 6371.0;
+  final dLat = (_meccaLat - lat) * math.pi / 180;
+  final dLng = (_meccaLng - lng) * math.pi / 180;
+  final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+      math.cos(lat * math.pi / 180) *
+          math.cos(_meccaLat * math.pi / 180) *
+          math.sin(dLng / 2) *
+          math.sin(dLng / 2);
+  return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+}
+
+double _bearingDeg(double lat, double lng) {
+  final dLng = (_meccaLng - lng) * math.pi / 180;
+  final lat1 = lat * math.pi / 180;
+  final lat2 = _meccaLat * math.pi / 180;
+  final y = math.sin(dLng) * math.cos(lat2);
+  final x = math.cos(lat1) * math.sin(lat2) -
+      math.sin(lat1) * math.cos(lat2) * math.cos(dLng);
+  return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
+}
+
+String _fmtDist(double km) {
+  final s = km.round().toString();
+  return s.length > 3 ? '${s.substring(0, s.length - 3)} ${s.substring(s.length - 3)}' : s;
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+
 class QiblaScreen extends StatelessWidget {
   const QiblaScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final location = context.watch<LocationService>();
+
+    final appBar = AppBar(
+      title: const Text('Direction Qibla'),
+      backgroundColor: Theme.of(context).colorScheme.surface,
+    );
+
     if (kIsWeb) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Direction Qibla')),
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.explore_off, size: 64, color: AppColors.textMuted),
-              SizedBox(height: 16),
-              Text(
-                'La boussole Qibla nécessite\nun appareil mobile',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
+        appBar: appBar,
+        body: location.isLoading
+            ? const _Loading()
+            : _QiblaFallback(
+                latitude: location.latitude ?? -12.8275,
+                longitude: location.longitude ?? 45.1662,
+                isMayotteFallback: !location.hasLocation,
+                isWeb: true,
               ),
-            ],
-          ),
-        ),
       );
     }
 
-    final location = context.watch<LocationService>();
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Direction Qibla'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-      ),
-      body: !location.hasLocation
-          ? const Center(
-              child: Text('Localisation requise pour la direction Qibla'),
-            )
-          : _QiblaCompass(
-              latitude: location.latitude!,
-              longitude: location.longitude!,
-            ),
+      appBar: appBar,
+      body: location.isLoading
+          ? const _Loading()
+          : !location.hasLocation
+              ? _QiblaFallback(
+                  latitude: -12.8275,
+                  longitude: 45.1662,
+                  isMayotteFallback: true,
+                )
+              : _QiblaCompass(
+                  latitude: location.latitude!,
+                  longitude: location.longitude!,
+                ),
     );
   }
 }
+
+class _Loading extends StatelessWidget {
+  const _Loading();
+  @override
+  Widget build(BuildContext context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.green, strokeWidth: 2),
+      );
+}
+
+// ── Static Qibla info (web or no-location) ────────────────────────────────────
+
+class _QiblaFallback extends StatelessWidget {
+  final double latitude;
+  final double longitude;
+  final bool isMayotteFallback;
+  final bool isWeb;
+
+  const _QiblaFallback({
+    required this.latitude,
+    required this.longitude,
+    this.isMayotteFallback = false,
+    this.isWeb = false,
+  });
+
+  String _notice() {
+    if (isWeb && isMayotteFallback) {
+      return 'Flèche orientée depuis le Nord · Position par défaut (Mayotte) · Activez la géolocalisation pour votre position exacte';
+    }
+    if (isWeb) {
+      return 'Flèche orientée depuis le Nord · La boussole interactive nécessite un appareil mobile';
+    }
+    return 'Position par défaut (Mayotte) · Activez la localisation pour orienter la flèche depuis votre position exacte';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dist = _distanceKm(latitude, longitude);
+    final bearing = _bearingDeg(latitude, longitude);
+    final bearingRad = bearing * math.pi / 180;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
+      child: Column(
+        children: [
+          // Arabic + French header
+          Text(
+            'اتجاه القبلة',
+            style: AppFonts.arabic(
+              color: AppColors.textPrimary,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              height: 1,
+            ),
+          ).animate().fadeIn(duration: 400.ms),
+          const SizedBox(height: 4),
+          const Text(
+            'Direction de la Qibla',
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 12,
+              letterSpacing: 0.4,
+            ),
+          ).animate().fadeIn(duration: 400.ms, delay: 60.ms),
+
+          const SizedBox(height: 40),
+
+          // Compass with static Qibla arrow
+          SizedBox(
+            width: 240,
+            height: 240,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 240,
+                  height: 240,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border, width: 1.5),
+                    gradient: RadialGradient(colors: [
+                      AppColors.surface.withOpacity(0.5),
+                      AppColors.bgDark.withOpacity(0.8),
+                    ]),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      for (final d in ['N', 'E', 'S', 'O']) _CompassLabel(d),
+                    ],
+                  ),
+                ),
+                Transform.rotate(
+                  angle: bearingRad,
+                  child: const _QiblahNeedle(),
+                ),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: const BoxDecoration(
+                    color: AppColors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+          )
+              .animate()
+              .fadeIn(duration: 500.ms, delay: 100.ms)
+              .scale(
+                begin: const Offset(0.92, 0.92),
+                end: const Offset(1, 1),
+                duration: 500.ms,
+                delay: 100.ms,
+                curve: Curves.easeOut,
+              ),
+
+          const SizedBox(height: 36),
+
+          // Distance + bearing chips
+          Row(
+            children: [
+              Expanded(
+                child: _InfoChip(
+                  label: 'DISTANCE',
+                  value: _fmtDist(dist),
+                  unit: 'km de La Mecque',
+                  icon: Icons.route_outlined,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _InfoChip(
+                  label: 'DIRECTION',
+                  value: '${bearing.toStringAsFixed(1)}°',
+                  unit: 'depuis le Nord',
+                  icon: Icons.navigation_outlined,
+                ),
+              ),
+            ],
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 200.ms)
+              .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 200.ms),
+
+          const SizedBox(height: 16),
+
+          // Notice
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceLo,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: Icon(
+                    isMayotteFallback && !isWeb
+                        ? Icons.location_off_outlined
+                        : Icons.info_outline,
+                    color: AppColors.textMuted,
+                    size: 15,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _notice(),
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ).animate().fadeIn(duration: 400.ms, delay: 280.ms),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+  final IconData icon;
+
+  const _InfoChip({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: AppColors.textMuted, size: 13),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: AppFonts.mono(
+              color: AppColors.textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            unit,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 10,
+              height: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Live compass (mobile with sensor) ────────────────────────────────────────
 
 class _QiblaCompass extends StatelessWidget {
   final double latitude;
@@ -63,11 +351,11 @@ class _QiblaCompass extends StatelessWidget {
       stream: FlutterQiblah.qiblahStream,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const _Loading();
         }
 
         final qiblah = snapshot.data!;
-        final angle = (qiblah.qiblah * (math.pi / 180) * -1);
+        final angle = qiblah.qiblah * (math.pi / 180) * -1;
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -95,11 +383,11 @@ class _QiblaCompass extends StatelessWidget {
                 children: [
                   Transform.rotate(
                     angle: qiblah.direction * (math.pi / 180) * -1,
-                    child: _CompassRose(),
+                    child: const _CompassRose(),
                   ),
                   Transform.rotate(
                     angle: angle,
-                    child: _QiblahNeedle(),
+                    child: const _QiblahNeedle(),
                   ),
                   Container(
                     width: 16,
@@ -121,7 +409,11 @@ class _QiblaCompass extends StatelessWidget {
   }
 }
 
+// ── Shared compass sub-widgets ────────────────────────────────────────────────
+
 class _CompassRose extends StatelessWidget {
+  const _CompassRose();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -140,8 +432,7 @@ class _CompassRose extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          for (final dir in ['N', 'E', 'S', 'O'])
-            _CompassLabel(dir),
+          for (final d in ['N', 'E', 'S', 'O']) _CompassLabel(d),
         ],
       ),
     );
@@ -152,17 +443,17 @@ class _CompassLabel extends StatelessWidget {
   final String label;
   const _CompassLabel(this.label);
 
+  static const _positions = {
+    'N': Alignment(0, -0.85),
+    'E': Alignment(0.85, 0),
+    'S': Alignment(0, 0.85),
+    'O': Alignment(-0.85, 0),
+  };
+
   @override
   Widget build(BuildContext context) {
-    final Map<String, Alignment> positions = {
-      'N': Alignment(0, -0.85),
-      'E': Alignment(0.85, 0),
-      'S': Alignment(0, 0.85),
-      'O': Alignment(-0.85, 0),
-    };
-
     return Align(
-      alignment: positions[label]!,
+      alignment: _positions[label]!,
       child: Text(
         label,
         style: TextStyle(
@@ -176,6 +467,8 @@ class _CompassLabel extends StatelessWidget {
 }
 
 class _QiblahNeedle extends StatelessWidget {
+  const _QiblahNeedle();
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -205,21 +498,19 @@ class _AccuracyIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAccurate = accuracy < 15;
+    final ok = accuracy < 15;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          isAccurate ? Icons.check_circle : Icons.warning_amber,
-          color: isAccurate ? Colors.green : Colors.orange,
+          ok ? Icons.check_circle : Icons.warning_amber,
+          color: ok ? Colors.green : Colors.orange,
           size: 18,
         ),
         const SizedBox(width: 8),
         Text(
-          isAccurate ? 'Précision correcte' : 'Calibrez votre boussole',
-          style: TextStyle(
-            color: isAccurate ? Colors.green : Colors.orange,
-          ),
+          ok ? 'Précision correcte' : 'Calibrez votre boussole',
+          style: TextStyle(color: ok ? Colors.green : Colors.orange),
         ),
       ],
     );
