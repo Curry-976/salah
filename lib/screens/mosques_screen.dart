@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../data/mosques_data.dart';
 import '../models/mosque_model.dart';
+import '../services/mosque_service.dart';
 import '../services/location_service.dart';
 import '../utils/theme.dart';
 
@@ -19,14 +20,37 @@ class _MosquesScreenState extends State<MosquesScreen> {
   Mosque? _selectedMosque;
   String? _filterSector;
 
+  List<Mosque> _mosques = mosqueesMayotte;
+  MosqueSource _source = MosqueSource.fallback;
+  bool _isLoading = false;
+
   static const _mayotteCenter = LatLng(-12.8275, 45.1662);
 
+  @override
+  void initState() {
+    super.initState();
+    _loadMosques();
+  }
+
+  Future<void> _loadMosques({bool forceRefresh = false}) async {
+    setState(() => _isLoading = true);
+    final result = await MosqueService.instance.getMosques(forceRefresh: forceRefresh);
+    if (mounted) {
+      setState(() {
+        _mosques = result.mosques;
+        _source = result.source;
+        _isLoading = false;
+        if (forceRefresh) _filterSector = null;
+      });
+    }
+  }
+
   List<Mosque> get _filtered => _filterSector == null
-      ? mosqueesMayotte
-      : mosqueesMayotte.where((m) => m.sector == _filterSector).toList();
+      ? _mosques
+      : _mosques.where((m) => m.sector == _filterSector).toList();
 
   List<String> get _sectors =>
-      mosqueesMayotte.map((m) => m.sector).toSet().toList()..sort();
+      _mosques.map((m) => m.sector).toSet().toList()..sort();
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +59,23 @@ class _MosquesScreenState extends State<MosquesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mosquées de Mayotte'),
+        actions: [
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white)),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Actualiser depuis OpenStreetMap',
+              onPressed: () => _loadMosques(forceRefresh: true),
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: _SectorFilter(
@@ -74,9 +115,8 @@ class _MosquesScreenState extends State<MosquesScreen> {
                         border: Border.all(color: Colors.white, width: 2.5),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withOpacity(0.5),
-                            blurRadius: 10,
-                          ),
+                              color: Colors.blue.withOpacity(0.5),
+                              blurRadius: 10)
                         ],
                       ),
                     ),
@@ -86,7 +126,8 @@ class _MosquesScreenState extends State<MosquesScreen> {
                       width: 38,
                       height: 38,
                       child: GestureDetector(
-                        onTap: () => setState(() => _selectedMosque = mosque),
+                        onTap: () =>
+                            setState(() => _selectedMosque = mosque),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           decoration: BoxDecoration(
@@ -107,8 +148,8 @@ class _MosquesScreenState extends State<MosquesScreen> {
                             ],
                           ),
                           child: const Center(
-                            child:
-                                Text('🕌', style: TextStyle(fontSize: 18)),
+                            child: Text('🕌',
+                                style: TextStyle(fontSize: 18)),
                           ),
                         ),
                       ),
@@ -116,11 +157,15 @@ class _MosquesScreenState extends State<MosquesScreen> {
               ]),
             ],
           ),
+          // Bandeau source + compteur
           Positioned(
             top: 8,
-            right: 8,
-            child: _MosqueCount(count: _filtered.length),
+            left: 8,
+            right: 60,
+            child: _SourceBanner(
+                count: _filtered.length, source: _source),
           ),
+          // Fiche mosquée sélectionnée
           if (_selectedMosque != null)
             Positioned(
               bottom: 80,
@@ -130,7 +175,8 @@ class _MosquesScreenState extends State<MosquesScreen> {
                 mosque: _selectedMosque!,
                 userLat: location.latitude,
                 userLng: location.longitude,
-                onClose: () => setState(() => _selectedMosque = null),
+                onClose: () =>
+                    setState(() => _selectedMosque = null),
               ),
             ),
         ],
@@ -140,8 +186,7 @@ class _MosquesScreenState extends State<MosquesScreen> {
         children: [
           FloatingActionButton.small(
             heroTag: 'center_mayotte',
-            onPressed: () =>
-                _mapController.move(_mayotteCenter, 11.0),
+            onPressed: () => _mapController.move(_mayotteCenter, 11.0),
             backgroundColor: Colors.white,
             child: const Icon(Icons.map, color: AppColors.green),
           ),
@@ -151,13 +196,48 @@ class _MosquesScreenState extends State<MosquesScreen> {
             onPressed: () {
               if (location.hasLocation) {
                 _mapController.move(
-                  LatLng(location.latitude!, location.longitude!),
-                  14.0,
-                );
+                    LatLng(location.latitude!, location.longitude!), 14.0);
               }
             },
             backgroundColor: AppColors.green,
             child: const Icon(Icons.my_location, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SourceBanner extends StatelessWidget {
+  final int count;
+  final MosqueSource source;
+  const _SourceBanner({required this.count, required this.source});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (source) {
+      MosqueSource.api     => ('OpenStreetMap', Colors.green.shade700),
+      MosqueSource.cache   => ('Cache OSM', Colors.orange.shade700),
+      MosqueSource.fallback => ('Liste de base', Colors.grey.shade600),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, size: 8, color: color),
+          const SizedBox(width: 6),
+          Text(
+            '$count mosquée${count > 1 ? "s" : ""} · $label',
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800),
           ),
         ],
       ),
@@ -170,11 +250,10 @@ class _SectorFilter extends StatelessWidget {
   final String? selected;
   final void Function(String) onSelected;
 
-  const _SectorFilter({
-    required this.sectors,
-    required this.selected,
-    required this.onSelected,
-  });
+  const _SectorFilter(
+      {required this.sectors,
+      required this.selected,
+      required this.onSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -193,35 +272,12 @@ class _SectorFilter extends StatelessWidget {
                     selectedColor: AppColors.green.withOpacity(0.2),
                     checkmarkColor: AppColors.green,
                     side: BorderSide(
-                      color: selected == s
-                          ? AppColors.green
-                          : Colors.grey.withOpacity(0.4),
-                    ),
+                        color: selected == s
+                            ? AppColors.green
+                            : Colors.grey.withOpacity(0.4)),
                   ),
                 ))
             .toList(),
-      ),
-    );
-  }
-}
-
-class _MosqueCount extends StatelessWidget {
-  final int count;
-  const _MosqueCount({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-      ),
-      child: Text(
-        '$count mosquée${count > 1 ? "s" : ""}',
-        style: const TextStyle(
-            fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.green),
       ),
     );
   }
@@ -233,21 +289,17 @@ class _MosqueInfoCard extends StatelessWidget {
   final double? userLng;
   final VoidCallback onClose;
 
-  const _MosqueInfoCard({
-    required this.mosque,
-    this.userLat,
-    this.userLng,
-    required this.onClose,
-  });
+  const _MosqueInfoCard(
+      {required this.mosque,
+      this.userLat,
+      this.userLng,
+      required this.onClose});
 
   String _distance() {
     if (userLat == null || userLng == null) return '';
     const d = Distance();
-    final km = d.as(
-      LengthUnit.Kilometer,
-      LatLng(userLat!, userLng!),
-      LatLng(mosque.lat, mosque.lng),
-    );
+    final km = d.as(LengthUnit.Kilometer, LatLng(userLat!, userLng!),
+        LatLng(mosque.lat, mosque.lng));
     return km < 1
         ? '${(km * 1000).round()} m'
         : '${km.toStringAsFixed(1)} km';
@@ -258,8 +310,7 @@ class _MosqueInfoCard extends StatelessWidget {
     final dist = _distance();
     return Card(
       elevation: 8,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
         child: Row(
@@ -271,35 +322,27 @@ class _MosqueInfoCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    mosque.name,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
+                  Text(mosque.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on,
-                          size: 14, color: AppColors.gold),
-                      const SizedBox(width: 4),
-                      Text(
-                        mosque.sector,
+                  Row(children: [
+                    const Icon(Icons.location_on,
+                        size: 14, color: AppColors.gold),
+                    const SizedBox(width: 4),
+                    Text(mosque.sector,
                         style: const TextStyle(
-                            color: AppColors.gold, fontSize: 13),
-                      ),
-                      if (dist.isNotEmpty) ...[
-                        const SizedBox(width: 10),
-                        const Icon(Icons.directions_walk,
-                            size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          dist,
+                            color: AppColors.gold, fontSize: 13)),
+                    if (dist.isNotEmpty) ...[
+                      const SizedBox(width: 10),
+                      const Icon(Icons.directions_walk,
+                          size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(dist,
                           style: const TextStyle(
-                              color: Colors.grey, fontSize: 12),
-                        ),
-                      ],
+                              color: Colors.grey, fontSize: 12)),
                     ],
-                  ),
+                  ]),
                 ],
               ),
             ),

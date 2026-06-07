@@ -11,3 +11,11 @@
     required this.lng,
   });
 }
+
+enum MosqueSource { api, cache, fallback }
+
+class MosqueResult {
+  final List<Mosque> mosques;
+  final MosqueSource source;
+  const MosqueResult(this.mosques, this.source);
+}
