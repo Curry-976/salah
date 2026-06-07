@@ -30,9 +30,6 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Configure web platform
-        run: flutter create . --platforms web
-
       - name: Build web
         run: flutter build web --release --base-href /salah/
 
