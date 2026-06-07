@@ -1,15 +1,20 @@
-﻿import 'dart:async';
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../services/location_service.dart';
 import '../services/prayer_service.dart';
 import '../widgets/next_prayer_banner.dart';
 import '../widgets/prayer_list.dart';
 import '../widgets/hijri_date_card.dart';
+import '../utils/theme.dart';
 import 'qibla_screen.dart';
 import 'mosques_screen.dart';
 import 'calendar_screen.dart';
 import 'settings_screen.dart';
+
+// ── Shell ─────────────────────────────────────────────────────────────────────
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +27,14 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   Timer? _countdownTimer;
 
+  static const _navItems = [
+    _NavItem(Icons.access_time_outlined, Icons.access_time_filled,   'Prières'),
+    _NavItem(Icons.explore_outlined,      Icons.explore,              'Qibla'),
+    _NavItem(Icons.mosque_outlined,       Icons.mosque,               'Mosquées'),
+    _NavItem(Icons.calendar_month_outlined,Icons.calendar_month,      'Calendrier'),
+    _NavItem(Icons.settings_outlined,     Icons.settings,             'Réglages'),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -29,17 +42,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _init() async {
-    final locationService = context.read<LocationService>();
-    final prayerService = context.read<PrayerService>();
-
-    await prayerService.loadSettings();
-    await locationService.fetchLocation();
-
-    if (locationService.hasLocation) {
-      await prayerService.calculate(
-        locationService.latitude!,
-        locationService.longitude!,
-      );
+    final loc   = context.read<LocationService>();
+    final pray  = context.read<PrayerService>();
+    await pray.loadSettings();
+    await loc.fetchLocation();
+    if (loc.hasLocation) {
+      await pray.calculate(loc.latitude!, loc.longitude!);
       _startCountdown();
     }
   }
@@ -67,41 +75,135 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (i) => setState(() => _currentIndex = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.access_time_outlined),
-            selectedIcon: Icon(Icons.access_time_filled),
-            label: 'Prières',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: 'Qibla',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.mosque_outlined),
-            selectedIcon: Icon(Icons.mosque),
-            label: 'Mosquées',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Calendrier',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Réglages',
-          ),
-        ],
+      backgroundColor: AppColors.bgDark,
+      body: MediaQuery(
+        // Reserve space for the floating nav bar in all child screens
+        data: MediaQuery.of(context).copyWith(
+          padding: MediaQuery.of(context).padding.copyWith(bottom: 96),
+        ),
+        child: Stack(
+          children: [
+            IndexedStack(index: _currentIndex, children: screens),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _FloatingNav(
+                items: _navItems,
+                currentIndex: _currentIndex,
+                onTap: (i) => setState(() => _currentIndex = i),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+
+// ── Floating navigation ───────────────────────────────────────────────────────
+
+class _NavItem {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  const _NavItem(this.icon, this.selectedIcon, this.label);
+}
+
+class _FloatingNav extends StatelessWidget {
+  final List<_NavItem> items;
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _FloatingNav({
+    required this.items,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewPadding.bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, math.max(bottom + 12, 20)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.6),
+              blurRadius: 40,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: List.generate(items.length, (i) {
+            final item = items[i];
+            final selected = i == currentIndex;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => onTap(i),
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOut,
+                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+                  decoration: selected
+                      ? BoxDecoration(
+                          color: AppColors.green.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                              color: AppColors.green.withOpacity(0.25)),
+                        )
+                      : null,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          selected ? item.selectedIcon : item.icon,
+                          key: ValueKey(selected),
+                          color: selected
+                              ? AppColors.greenLight
+                              : AppColors.textMuted,
+                          size: 22,
+                        ),
+                      ),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeInOut,
+                        child: selected
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 3),
+                                child: Text(
+                                  item.label,
+                                  style: const TextStyle(
+                                    color: AppColors.greenLight,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Prayer home ───────────────────────────────────────────────────────────────
 
 class _PrayerHome extends StatelessWidget {
   const _PrayerHome();
@@ -109,74 +211,238 @@ class _PrayerHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = context.watch<LocationService>();
-    final prayers = context.watch<PrayerService>();
+    final prayers  = context.watch<PrayerService>();
 
     return CustomScrollView(
       slivers: [
-        SliverAppBar(
-          expandedHeight: 120,
-          pinned: true,
-          flexibleSpace: FlexibleSpaceBar(
-            title: Text(
-              location.cityName.isNotEmpty ? location.cityName : 'Mayotte',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            centerTitle: true,
-          ),
-          actions: [
-            if (!location.isLoading)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Icon(
-                  location.isUsingFallback
-                      ? Icons.location_off_outlined
-                      : Icons.gps_fixed,
-                  size: 18,
-                  color: location.isUsingFallback
-                      ? Colors.white54
-                      : Colors.greenAccent,
-                ),
-              ),
-            IconButton(
-              icon: const Icon(Icons.my_location),
-              onPressed: () async {
-                await location.fetchLocation();
-                if (location.hasLocation) {
-                  await prayers.calculate(
-                    location.latitude!,
-                    location.longitude!,
-                  );
-                }
-              },
-            ),
-          ],
-        ),
+        SliverToBoxAdapter(child: _PrayerHeader(location: location)),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const HijriDateCard(),
                 const SizedBox(height: 16),
                 if (location.isLoading)
-                  const CircularProgressIndicator()
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.green,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  )
                 else if (prayers.nextPrayer != null)
                   NextPrayerBanner(
                     prayer: prayers.nextPrayer!,
                     timeToNext: prayers.timeToNext,
                   ),
-                const SizedBox(height: 16),
               ],
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Text(
+              'HORAIRES DU JOUR',
+              style: TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.4,
+              ),
             ),
           ),
         ),
         if (prayers.todayPrayers.isNotEmpty)
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             sliver: PrayerList(prayers: prayers.todayPrayers),
           ),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 28)),
       ],
     );
   }
+}
+
+// ── Header with Islamic geometric pattern ─────────────────────────────────────
+
+class _PrayerHeader extends StatelessWidget {
+  final LocationService location;
+  const _PrayerHeader({required this.location});
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).viewPadding.top;
+    final prayers = context.read<PrayerService>();
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, topPad + 20, 20, 28),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF081A10), Color(0xFF0A1628), AppColors.bgDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0, 0.5, 1],
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Subtle Islamic geometric pattern
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _StarPatternPainter(
+                AppColors.green.withOpacity(0.07),
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top bar
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              location.isUsingFallback
+                                  ? Icons.location_off_outlined
+                                  : Icons.gps_fixed,
+                              size: 13,
+                              color: location.isUsingFallback
+                                  ? AppColors.textMuted
+                                  : AppColors.greenLight,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              location.hasLocation
+                                  ? (location.cityName.isNotEmpty
+                                      ? location.cityName
+                                      : 'Mayotte')
+                                  : 'Mayotte',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'الصلوات الخمس',
+                          style: TextStyle(
+                            color: AppColors.gold,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            height: 1.1,
+                          ),
+                          textDirection: TextDirection.rtl,
+                        ),
+                        const Text(
+                          'Les cinq prières',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Refresh button
+                  _HeaderButton(
+                    icon: location.isLoading
+                        ? Icons.hourglass_top_outlined
+                        : Icons.my_location,
+                    onTap: () async {
+                      await location.fetchLocation();
+                      if (location.hasLocation) {
+                        await prayers.calculate(
+                            location.latitude!, location.longitude!);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ],
+          )
+              .animate()
+              .fadeIn(duration: 500.ms)
+              .slideY(begin: -0.04, end: 0, duration: 500.ms),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _HeaderButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLo,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Icon(icon, size: 18, color: AppColors.textSecondary),
+      ),
+    );
+  }
+}
+
+// ── Islamic 8-pointed star pattern ───────────────────────────────────────────
+
+class _StarPatternPainter extends CustomPainter {
+  final Color color;
+  _StarPatternPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8;
+
+    const step = 54.0;
+    const r = 16.0;
+
+    for (double x = step / 2; x < size.width + step; x += step) {
+      for (double y = step / 2; y < size.height + step; y += step) {
+        _drawStar(canvas, paint, Offset(x, y), r);
+      }
+    }
+  }
+
+  void _drawStar(Canvas canvas, Paint paint, Offset c, double r) {
+    const n = 8;
+    final path = Path();
+    for (int i = 0; i < n * 2; i++) {
+      final angle = i * math.pi / n - math.pi / 2;
+      final radius = i.isEven ? r : r * 0.38;
+      final x = c.dx + radius * math.cos(angle);
+      final y = c.dy + radius * math.sin(angle);
+      if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_StarPatternPainter o) => o.color != color;
 }
