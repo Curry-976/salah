@@ -23,12 +23,12 @@ class HijriDateCard extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(0.1),
+              color: AppColors.textMuted.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
               Icons.calendar_today,
-              color: AppColors.gold,
+              color: AppColors.textSecondary,
               size: 16,
             ),
           ),
@@ -40,7 +40,7 @@ class HijriDateCard extends StatelessWidget {
                 Text(
                   hijri.format(),
                   style: const TextStyle(
-                    color: AppColors.gold,
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
                     letterSpacing: 0.2,
@@ -61,7 +61,7 @@ class HijriDateCard extends StatelessWidget {
           Text(
             '${hijri.day}',
             style: const TextStyle(
-              color: AppColors.gold,
+              color: AppColors.textPrimary,
               fontSize: 28,
               fontWeight: FontWeight.w700,
               height: 1,

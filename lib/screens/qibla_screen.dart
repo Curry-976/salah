@@ -19,7 +19,7 @@ class QiblaScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.explore_off, size: 64, color: AppColors.gold),
+              Icon(Icons.explore_off, size: 64, color: AppColors.textMuted),
               SizedBox(height: 16),
               Text(
                 'La boussole Qibla nécessite\nun appareil mobile',
@@ -75,7 +75,7 @@ class _QiblaCompass extends StatelessWidget {
             Text(
               'La Mecque',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppColors.gold,
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
             ),
@@ -102,7 +102,7 @@ class _QiblaCompass extends StatelessWidget {
                     width: 16,
                     height: 16,
                     decoration: const BoxDecoration(
-                      color: AppColors.gold,
+                      color: AppColors.green,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -126,7 +126,7 @@ class _CompassRose extends StatelessWidget {
       height: 280,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 2),
+        border: Border.all(color: AppColors.border, width: 1.5),
         gradient: RadialGradient(
           colors: [
             AppColors.darkSurface.withOpacity(0.5),
@@ -163,7 +163,7 @@ class _CompassLabel extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          color: label == 'N' ? Colors.red : AppColors.gold,
+          color: label == 'N' ? Colors.red : AppColors.textSecondary,
           fontWeight: FontWeight.bold,
           fontSize: 16,
         ),
@@ -186,7 +186,7 @@ class _QiblahNeedle extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [AppColors.gold, Colors.transparent],
+              colors: [AppColors.greenLight, Colors.transparent],
             ),
             borderRadius: BorderRadius.circular(2),
           ),

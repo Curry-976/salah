@@ -48,7 +48,7 @@ class AppTheme {
     scaffoldBackgroundColor: AppColors.bgDark,
     colorScheme: const ColorScheme.dark(
       primary: AppColors.green,
-      secondary: AppColors.gold,
+      secondary: AppColors.greenLight,
       surface: AppColors.surface,
       onPrimary: Colors.white,
       onSecondary: Colors.black,
@@ -128,7 +128,7 @@ class AppTheme {
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.green,
-      secondary: AppColors.gold,
+      secondary: AppColors.greenLight,
       brightness: Brightness.light,
     ),
     textTheme: GoogleFonts.poppinsTextTheme(),

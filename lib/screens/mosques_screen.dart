@@ -215,7 +215,7 @@ class _MosquesScreenState extends State<MosquesScreen> {
                           duration: const Duration(milliseconds: 200),
                           decoration: BoxDecoration(
                             color: _selectedMosque == mosque
-                                ? AppColors.gold
+                                ? AppColors.greenLight
                                 : AppColors.green,
                             shape: BoxShape.circle,
                             border:
@@ -223,7 +223,7 @@ class _MosquesScreenState extends State<MosquesScreen> {
                             boxShadow: [
                               BoxShadow(
                                 color: (_selectedMosque == mosque
-                                        ? AppColors.gold
+                                        ? AppColors.greenLight
                                         : AppColors.green)
                                     .withOpacity(0.4),
                                 blurRadius: 6,
@@ -375,11 +375,11 @@ class _MosqueCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis),
                       Row(children: [
                         const Icon(Icons.location_on,
-                            size: 13, color: AppColors.gold),
+                            size: 13, color: AppColors.textMuted),
                         const SizedBox(width: 3),
                         Text(mosque.sector,
                             style: const TextStyle(
-                                color: AppColors.gold, fontSize: 12)),
+                                color: AppColors.textMuted, fontSize: 12)),
                         if (_straightDistance().isNotEmpty) ...[
                           const SizedBox(width: 8),
                           const Icon(Icons.straighten,

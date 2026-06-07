@@ -127,7 +127,7 @@ class _MonthNavigator extends StatelessWidget {
               ),
               Text(
                 hijri.formatMonthYear(),
-                style: const TextStyle(color: AppColors.gold, fontSize: 13),
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
               ),
             ],
           ),
@@ -206,11 +206,11 @@ class _CalendarGrid extends StatelessWidget {
                     color: isSelected
                         ? AppColors.green
                         : isToday
-                            ? AppColors.gold.withOpacity(0.2)
+                            ? AppColors.greenLight.withOpacity(0.15)
                             : null,
                     borderRadius: BorderRadius.circular(8),
                     border: isToday && !isSelected
-                        ? Border.all(color: AppColors.gold, width: 1.5)
+                        ? Border.all(color: AppColors.greenLight, width: 1.5)
                         : null,
                   ),
                   child: Column(
@@ -229,7 +229,7 @@ class _CalendarGrid extends StatelessWidget {
                           fontSize: 10,
                           color: isSelected
                               ? Colors.white.withOpacity(0.8)
-                              : AppColors.gold,
+                              : AppColors.textMuted,
                         ),
                       ),
                       if (hasEvent)
@@ -238,7 +238,7 @@ class _CalendarGrid extends StatelessWidget {
                           height: 5,
                           margin: const EdgeInsets.only(top: 1),
                           decoration: BoxDecoration(
-                            color: isSelected ? Colors.white : AppColors.gold,
+                            color: isSelected ? Colors.white : AppColors.greenLight,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -290,7 +290,7 @@ class _SelectedDayInfo extends StatelessWidget {
               Text(
                 hijri.format(),
                 style: const TextStyle(
-                    fontWeight: FontWeight.bold, color: AppColors.gold),
+                    fontWeight: FontWeight.bold, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -353,11 +353,11 @@ class _IslamicEventsCard extends StatelessWidget {
             for (final e in events)
               ListTile(
                 dense: true,
-                leading: const Icon(Icons.star, color: AppColors.gold, size: 18),
+                leading: const Icon(Icons.star, color: AppColors.textSecondary, size: 18),
                 title: Text(e.name),
                 subtitle: Text(
                   e.hijri.format(),
-                  style: const TextStyle(fontSize: 11, color: AppColors.gold),
+                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                 ),
                 trailing: Text(
                   fmt.format(e.greg),

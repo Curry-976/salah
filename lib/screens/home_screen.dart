@@ -370,7 +370,7 @@ class _PrayerHeader extends StatelessWidget {
                         const Text(
                           'الصلوات الخمس',
                           style: TextStyle(
-                            color: AppColors.gold,
+                            color: AppColors.textPrimary,
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
                             height: 1.1,
