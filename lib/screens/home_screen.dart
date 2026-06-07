@@ -110,7 +110,7 @@ class _NavItem {
   const _NavItem(this.icon, this.selectedIcon, this.label);
 }
 
-class _FloatingNav extends StatelessWidget {
+class _FloatingNav extends StatefulWidget {
   final List<_NavItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -122,12 +122,23 @@ class _FloatingNav extends StatelessWidget {
   });
 
   @override
+  State<_FloatingNav> createState() => _FloatingNavState();
+}
+
+class _FloatingNavState extends State<_FloatingNav> {
+  static const double _itemHeight = 52;
+  static const double _indicatorH = 2.0;
+  static const double _indicatorW = 28.0;
+
+  @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewPadding.bottom;
+    final n = widget.items.length;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, math.max(bottom + 12, 20)),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        height: _itemHeight + 16, // fixed: 8px top + 8px bottom padding
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(32),
@@ -140,63 +151,83 @@ class _FloatingNav extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          children: List.generate(items.length, (i) {
-            final item = items[i];
-            final selected = i == currentIndex;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => onTap(i),
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final totalW = constraints.maxWidth;
+            final slotW = totalW / n;
+            final indicatorLeft =
+                slotW * widget.currentIndex + (slotW - _indicatorW) / 2;
+
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Sliding indicator
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(end: indicatorLeft),
                   duration: const Duration(milliseconds: 280),
                   curve: Curves.easeInOut,
-                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
-                  decoration: selected
-                      ? BoxDecoration(
-                          color: AppColors.green.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                              color: AppColors.green.withOpacity(0.25)),
-                        )
-                      : null,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child: Icon(
-                          selected ? item.selectedIcon : item.icon,
-                          key: ValueKey(selected),
-                          color: selected
-                              ? AppColors.greenLight
-                              : AppColors.textMuted,
-                          size: 22,
-                        ),
+                  builder: (context, x, _) => Positioned(
+                    left: x,
+                    bottom: 8,
+                    child: Container(
+                      width: _indicatorW,
+                      height: _indicatorH,
+                      decoration: BoxDecoration(
+                        color: AppColors.greenLight,
+                        borderRadius: BorderRadius.circular(1),
                       ),
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeInOut,
-                        child: selected
-                            ? Padding(
-                                padding: const EdgeInsets.only(top: 3),
+                    ),
+                  ),
+                ),
+                // Items
+                Row(
+                  children: List.generate(n, (i) {
+                    final item = widget.items[i];
+                    final selected = i == widget.currentIndex;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => widget.onTap(i),
+                        behavior: HitTestBehavior.opaque,
+                        child: SizedBox(
+                          height: _itemHeight + 16,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: Icon(
+                                  selected ? item.selectedIcon : item.icon,
+                                  key: ValueKey(selected),
+                                  color: selected
+                                      ? AppColors.greenLight
+                                      : AppColors.textMuted,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              AnimatedOpacity(
+                                opacity: selected ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 200),
                                 child: Text(
                                   item.label,
                                   style: const TextStyle(
                                     color: AppColors.greenLight,
-                                    fontSize: 10,
+                                    fontSize: 9,
                                     fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.2,
                                   ),
                                 ),
-                              )
-                            : const SizedBox.shrink(),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
+                    );
+                  }),
                 ),
-              ),
+              ],
             );
-          }),
+          },
         ),
       ),
     );
