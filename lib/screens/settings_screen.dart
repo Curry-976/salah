@@ -114,8 +114,6 @@ class SettingsScreen extends StatelessWidget {
         return 'Turquie';
       case CalculationMethod.tehran:
         return 'Téhéran';
-      case CalculationMethod.france:
-        return 'France (UOIF)';
       default:
         return method.name;
     }
@@ -181,7 +179,6 @@ class _MethodPickerSheet extends StatelessWidget {
       CalculationMethod.singapore: 'Singapour',
       CalculationMethod.turkey: 'Turquie',
       CalculationMethod.tehran: 'Téhéran',
-      CalculationMethod.france: 'France',
     };
     return names[m] ?? m.name;
   }
