@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_compass/flutter_compass.dart';
 import 'package:flutter_qiblah/flutter_qiblah.dart';
 import 'package:provider/provider.dart';
 import '../services/location_service.dart';
@@ -165,8 +164,8 @@ class _QiblaFallback extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.border, width: 1.5),
                     gradient: RadialGradient(colors: [
-                      AppColors.surface.withOpacity(0.5),
-                      AppColors.bgDark.withOpacity(0.8),
+                      AppColors.surface.withValues(alpha: 0.5),
+                      AppColors.bgDark.withValues(alpha: 0.8),
                     ]),
                   ),
                   child: Stack(
@@ -178,7 +177,7 @@ class _QiblaFallback extends StatelessWidget {
                 ),
                 Transform.rotate(
                   angle: bearingRad,
-                  child: const _QiblahNeedle(),
+                  child: const _QiblahNeedle(diameter: 240),
                 ),
                 Container(
                   width: 12,
@@ -387,7 +386,7 @@ class _QiblaCompass extends StatelessWidget {
                   ),
                   Transform.rotate(
                     angle: angle,
-                    child: const _QiblahNeedle(),
+                    child: const _QiblahNeedle(diameter: 280),
                   ),
                   Container(
                     width: 16,
@@ -424,8 +423,8 @@ class _CompassRose extends StatelessWidget {
         border: Border.all(color: AppColors.border, width: 1.5),
         gradient: RadialGradient(
           colors: [
-            AppColors.darkSurface.withOpacity(0.5),
-            AppColors.darkBg.withOpacity(0.8),
+            AppColors.darkSurface.withValues(alpha: 0.5),
+            AppColors.darkBg.withValues(alpha: 0.8),
           ],
         ),
       ),
@@ -466,28 +465,49 @@ class _CompassLabel extends StatelessWidget {
   }
 }
 
+// Aiguille Qibla correctement dimensionnée.
+// La widget a la même taille que la boussole (diameter × diameter) ;
+// son centre = centre de la boussole = pivot de la rotation.
+// Align(topCenter) place la Kaaba près du bord, l'aiguille traverse le centre.
 class _QiblahNeedle extends StatelessWidget {
-  const _QiblahNeedle();
+  final double diameter;
+  const _QiblahNeedle({this.diameter = 240});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text('🕋', style: TextStyle(fontSize: 28)),
-        Container(
-          width: 4,
-          height: 80,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppColors.greenLight, Colors.transparent],
+    final r = diameter / 2;
+    // Bar : de la base de l'emoji jusqu'à 20 px après le centre
+    // top(10) + emoji(24) + bar = r + 20  →  bar = r - 14
+    final barH = r - 14;
+
+    return SizedBox(
+      width: diameter,
+      height: diameter,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            const Text('🕋', style: TextStyle(fontSize: 24)),
+            Container(
+              width: 3,
+              height: barH,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.greenLight,
+                    AppColors.greenLight.withValues(alpha: 0.08),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            borderRadius: BorderRadius.circular(2),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
