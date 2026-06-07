@@ -8,14 +8,28 @@ class PrayerList extends StatelessWidget {
   final List<PrayerTime> prayers;
   const PrayerList({super.key, required this.prayers});
 
+  // Map the gap to the next prayer onto a bottom margin.
+  // [60 min, 360 min] → [4 px, 24 px], clamped.
+  static double _gapMargin(DateTime from, DateTime? to) {
+    if (to == null) return 4;
+    final minutes = to.difference(from).inMinutes;
+    if (minutes <= 0) return 4;
+    const t = 1.0 / (360.0 - 60.0);
+    return (4.0 + (minutes - 60.0) * t * 20.0).clamp(4.0, 24.0);
+  }
+
   @override
   Widget build(BuildContext context) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
-        (context, i) => PrayerTile(prayer: prayers[i])
-            .animate(delay: (i * 55).ms)
-            .fadeIn(duration: 380.ms, curve: Curves.easeOut)
-            .slideX(begin: -0.06, end: 0, duration: 380.ms, curve: Curves.easeOut),
+        (context, i) {
+          final nextTime = i + 1 < prayers.length ? prayers[i + 1].time : null;
+          final margin = _gapMargin(prayers[i].time, nextTime);
+          return PrayerTile(prayer: prayers[i], bottomMargin: margin)
+              .animate(delay: (i * 55).ms)
+              .fadeIn(duration: 380.ms, curve: Curves.easeOut)
+              .slideX(begin: -0.06, end: 0, duration: 380.ms, curve: Curves.easeOut);
+        },
         childCount: prayers.length,
       ),
     );
@@ -24,7 +38,8 @@ class PrayerList extends StatelessWidget {
 
 class PrayerTile extends StatelessWidget {
   final PrayerTime prayer;
-  const PrayerTile({super.key, required this.prayer});
+  final double bottomMargin;
+  const PrayerTile({super.key, required this.prayer, this.bottomMargin = 8});
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +62,7 @@ class PrayerTile extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: bottomMargin),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(18),
