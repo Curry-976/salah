@@ -74,27 +74,37 @@ class _HomeScreenState extends State<HomeScreen> {
       const SettingsScreen(),
     ];
 
+    final mq = MediaQuery.of(context);
+
     return Scaffold(
       backgroundColor: AppColors.bgDark,
-      body: MediaQuery(
-        // Reserve space for the floating nav bar in all child screens
-        data: MediaQuery.of(context).copyWith(
-          padding: MediaQuery.of(context).padding.copyWith(bottom: 96),
-        ),
-        child: Stack(
-          children: [
-            IndexedStack(index: _currentIndex, children: screens),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _FloatingNav(
-                items: _navItems,
-                currentIndex: _currentIndex,
-                onTap: (i) => setState(() => _currentIndex = i),
-              ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 430,
+            minHeight: mq.size.height,
+          ),
+          child: MediaQuery(
+            // Reserve space for the floating nav bar in all child screens
+            data: mq.copyWith(
+              padding: mq.padding.copyWith(bottom: 96),
             ),
-          ],
+            child: Stack(
+              children: [
+                IndexedStack(index: _currentIndex, children: screens),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: _FloatingNav(
+                    items: _navItems,
+                    currentIndex: _currentIndex,
+                    onTap: (i) => setState(() => _currentIndex = i),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
