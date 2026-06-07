@@ -15,7 +15,14 @@ class HijriDate {
     'Ramadan', 'Chawwal', "Dhul Qi'da", 'Dhul Hijja',
   ];
 
+  static const _arabicMonthNames = [
+    'محرم', 'صفر', 'ربيع الأول', 'ربيع الثاني',
+    'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
+    'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة',
+  ];
+
   String get monthName => _monthNames[month - 1];
+  String get arabicMonthName => _arabicMonthNames[month - 1];
 
   String format() => '$day $monthName $year';
   String formatMonthYear() => '$monthName $year';

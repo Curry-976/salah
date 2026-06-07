@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import '../utils/hijri_converter.dart';
 import '../utils/theme.dart';
@@ -67,29 +68,62 @@ class _HijriHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      clipBehavior: Clip.hardEdge,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.green, Color(0xFF145C30)],
+          colors: [Color(0xFF081A10), Color(0xFF0B1E16), AppColors.bgDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          stops: [0.0, 0.55, 1.0],
         ),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          Text(
-            hijri.format(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
+          // Watermark: Arabic month name, large, low-opacity, clipped at top-right
+          Positioned(
+            right: -8,
+            top: -10,
+            child: Text(
+              hijri.arabicMonthName,
+              style: AppFonts.arabic(
+                color: AppColors.greenLight.withOpacity(0.09),
+                fontSize: 112,
+                fontWeight: FontWeight.bold,
+                height: 1,
+              ),
+              textDirection: TextDirection.rtl,
+            ).animate().fadeIn(duration: 700.ms, curve: Curves.easeOut),
           ),
-          const SizedBox(height: 4),
-          Text(
-            DateFormat('EEEE d MMMM yyyy', 'fr_FR').format(DateTime.now()),
-            style: TextStyle(color: Colors.white.withOpacity(0.8)),
+          // Content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hijri.format(),
+                  style: AppFonts.arabic(
+                    color: AppColors.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    height: 1.1,
+                  ),
+                  textDirection: TextDirection.rtl,
+                )
+                    .animate()
+                    .fadeIn(duration: 400.ms, delay: 60.ms)
+                    .slideX(begin: -0.04, end: 0, duration: 400.ms, delay: 60.ms),
+                const SizedBox(height: 5),
+                Text(
+                  DateFormat('EEEE d MMMM yyyy', 'fr_FR').format(DateTime.now()),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    letterSpacing: 0.2,
+                  ),
+                ).animate().fadeIn(duration: 400.ms, delay: 130.ms),
+              ],
+            ),
           ),
         ],
       ),
