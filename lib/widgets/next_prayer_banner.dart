@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/prayer_model.dart';
@@ -18,6 +19,7 @@ class NextPrayerBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF0B2016), Color(0xFF071510), Color(0xFF060F1A)],
@@ -41,26 +43,10 @@ class NextPrayerBanner extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Subtle right-side glow behind the time
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              width: 120,
-              height: 100,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  bottomRight: Radius.circular(28),
-                ),
-                gradient: RadialGradient(
-                  center: Alignment.bottomRight,
-                  radius: 1.0,
-                  colors: [
-                    AppColors.green.withOpacity(0.10),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
+          // Concentric arc ornament — top-right corner
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _ArcPainter(AppColors.green),
             ),
           ),
           Padding(
@@ -212,4 +198,36 @@ class _PulsingDot extends StatelessWidget {
       ],
     );
   }
+}
+
+// Four concentric quarter-circle arcs centered at the top-right corner.
+// Start angle π/2 (right edge, depth r), sweep +π/2 clockwise to top edge (x = width-r).
+class _ArcPainter extends CustomPainter {
+  final Color baseColor;
+  _ArcPainter(this.baseColor);
+
+  static const _radii    = [58.0, 96.0, 134.0, 172.0];
+  static const _opacities = [0.20, 0.14, 0.09, 0.05];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (int i = 0; i < _radii.length; i++) {
+      final paint = Paint()
+        ..color = baseColor.withOpacity(_opacities[i])
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.9
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(size.width, 0), radius: _radii[i]),
+        math.pi / 2,  // start: right edge at y = r
+        math.pi / 2,  // sweep clockwise → top edge at x = width - r
+        false,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ArcPainter old) => old.baseColor != baseColor;
 }
