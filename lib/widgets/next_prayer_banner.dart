@@ -19,7 +19,7 @@ class NextPrayerBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      clipBehavior: Clip.antiAlias,
+      clipBehavior: Clip.none,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF0B2016), Color(0xFF071510), Color(0xFF060F1A)],
@@ -42,6 +42,7 @@ class NextPrayerBanner extends StatelessWidget {
         ],
       ),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           // Concentric arc ornament — top-right corner
           Positioned.fill(
@@ -137,22 +138,22 @@ class NextPrayerBanner extends StatelessWidget {
 
                 const SizedBox(width: 8),
 
-                // ── RIGHT: time — dominant number, bottom-anchored ────────
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
+                // ── RIGHT: time — 68px, overflows 20px below container ───
+                Transform.translate(
+                  offset: const Offset(0, 44),
                   child: Text(
                     PrayerFormatter.formatTime(prayer.time),
                     style: AppFonts.mono(
                       color: AppColors.textPrimary,
-                      fontSize: 52,
+                      fontSize: 68,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: -2.5,
+                      letterSpacing: -3,
                       height: 1,
                     ),
                   )
                       .animate()
                       .fadeIn(duration: 560.ms, delay: 200.ms)
-                      .slideY(begin: 0.12, end: 0, duration: 560.ms, delay: 200.ms, curve: Curves.easeOut),
+                      .slideY(begin: 0.10, end: 0, duration: 560.ms, delay: 200.ms, curve: Curves.easeOut),
                 ),
               ],
             ),
