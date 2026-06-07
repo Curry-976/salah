@@ -62,20 +62,32 @@ class _MosquesScreenState extends State<MosquesScreen> {
       mode: _travelMode,
     );
 
-    if (mounted) {
-      setState(() {
-        _route = result;
-        _isRoutingLoading = false;
-      });
-      if (result != null) _fitRoute(result, location);
+    if (!mounted) return;
+    setState(() {
+      _route = result;
+      _isRoutingLoading = false;
+    });
+    if (result != null) {
+      _fitRoute(result);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible de calculer l\'itinéraire. Vérifiez votre connexion.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 
-  void _fitRoute(RouteResult route, LocationService location) {
+  void _fitRoute(RouteResult route) {
     if (route.points.isEmpty) return;
     final bounds = LatLngBounds.fromPoints(route.points);
+    // Bottom padding accounts for the mosque card (~220px) + FABs
     _mapController.fitCamera(
-      CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(60)),
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: const EdgeInsets.fromLTRB(48, 60, 48, 260),
+      ),
     );
   }
 

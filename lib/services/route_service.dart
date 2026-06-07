@@ -38,7 +38,11 @@ class RouteService {
     required LatLng to,
     TravelMode mode = TravelMode.driving,
   }) async {
-    final profile = mode == TravelMode.driving ? 'driving' : 'walking';
+    // OSRM demo profiles: 'driving', 'cycling', 'foot' (not 'walking')
+    final profile = switch (mode) {
+      TravelMode.driving => 'driving',
+      TravelMode.walking => 'foot',
+    };
     final url =
         '$_baseUrl/$profile/${from.longitude},${from.latitude};${to.longitude},${to.latitude}'
         '?geometries=geojson&overview=full';
