@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hijri/hijri_calendar.dart';
+import '../utils/hijri_converter.dart';
 import '../utils/theme.dart';
 
 class HijriDateCard extends StatelessWidget {
@@ -8,7 +8,7 @@ class HijriDateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final hijri = HijriCalendar.fromDate(now);
+    final hijri = HijriDate.fromGregorian(now);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -23,7 +23,7 @@ class HijriDateCard extends StatelessWidget {
           const Icon(Icons.calendar_today, color: AppColors.gold, size: 18),
           const SizedBox(width: 10),
           Text(
-            hijri.toFormat('DD MMMM yyyy'),
+            hijri.format(),
             style: const TextStyle(
               color: AppColors.gold,
               fontWeight: FontWeight.w600,

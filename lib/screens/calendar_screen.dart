@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hijri/hijri_calendar.dart';
 import 'package:intl/intl.dart';
+import '../utils/hijri_converter.dart';
 import '../utils/theme.dart';
 
 class CalendarScreen extends StatefulWidget {
@@ -21,8 +21,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _selectedDay = DateTime.now();
   }
 
-  HijriCalendar _toHijri(DateTime date) =>
-      HijriCalendar.fromDate(date);
+  HijriDate _toHijri(DateTime date) =>
+      HijriDate.fromGregorian(date);
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +60,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 }
 
 class _HijriHeader extends StatelessWidget {
-  final HijriCalendar hijri;
+  final HijriDate hijri;
   const _HijriHeader({required this.hijri});
 
   @override
@@ -78,7 +78,7 @@ class _HijriHeader extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            hijri.toFormat('DD MMMM yyyy'),
+            hijri.format(),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
@@ -110,7 +110,7 @@ class _MonthNavigator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hijri = HijriCalendar.fromDate(
+    final hijri = HijriDate.fromGregorian(
         DateTime(focusedDay.year, focusedDay.month, 15));
 
     return Padding(
@@ -126,7 +126,7 @@ class _MonthNavigator extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               Text(
-                hijri.toFormat('MMMM yyyy'),
+                hijri.formatMonthYear(),
                 style: TextStyle(
                     color: AppColors.gold,
                     fontSize: 13),
@@ -144,7 +144,7 @@ class _CalendarGrid extends StatelessWidget {
   final DateTime focusedDay;
   final DateTime selectedDay;
   final Function(DateTime) onDaySelected;
-  final HijriCalendar Function(DateTime) toHijri;
+  final HijriDate Function(DateTime) toHijri;
 
   const _CalendarGrid({
     required this.focusedDay,
@@ -224,7 +224,7 @@ class _CalendarGrid extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${hijri.hDay}',
+                        '${hijri.day}',
                         style: TextStyle(
                           fontSize: 10,
                           color: isSelected
@@ -246,7 +246,7 @@ class _CalendarGrid extends StatelessWidget {
 
 class _SelectedDayInfo extends StatelessWidget {
   final DateTime gregorian;
-  final HijriCalendar hijri;
+  final HijriDate hijri;
 
   const _SelectedDayInfo({required this.gregorian, required this.hijri});
 
@@ -271,7 +271,7 @@ class _SelectedDayInfo extends StatelessWidget {
             children: [
               const Text('Hégirien', style: TextStyle(fontSize: 12)),
               Text(
-                hijri.toFormat('DD MMMM yyyy'),
+                hijri.format(),
                 style: const TextStyle(
                     fontWeight: FontWeight.bold, color: AppColors.gold),
               ),
