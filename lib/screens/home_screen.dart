@@ -34,11 +34,13 @@ class _HomeScreenState extends State<HomeScreen> {
     await prayerService.loadSettings();
     await locationService.fetchLocation();
 
-    await prayerService.calculate(
-      locationService.latitude,
-      locationService.longitude,
-    );
-    _startCountdown();
+    if (locationService.hasLocation) {
+      await prayerService.calculate(
+        locationService.latitude!,
+        locationService.longitude!,
+      );
+      _startCountdown();
+    }
   }
 
   void _startCountdown() {
@@ -99,6 +101,7 @@ class _PrayerHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final location = context.watch<LocationService>();
     final prayers = context.watch<PrayerService>();
 
     return CustomScrollView(
@@ -106,13 +109,27 @@ class _PrayerHome extends StatelessWidget {
         SliverAppBar(
           expandedHeight: 120,
           pinned: true,
-          flexibleSpace: const FlexibleSpaceBar(
+          flexibleSpace: FlexibleSpaceBar(
             title: Text(
-              'Mayotte',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              location.cityName.isNotEmpty ? location.cityName : 'Mayotte',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             centerTitle: true,
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.my_location),
+              onPressed: () async {
+                await location.fetchLocation();
+                if (location.hasLocation) {
+                  await prayers.calculate(
+                    location.latitude!,
+                    location.longitude!,
+                  );
+                }
+              },
+            ),
+          ],
         ),
         SliverToBoxAdapter(
           child: Padding(
@@ -121,13 +138,13 @@ class _PrayerHome extends StatelessWidget {
               children: [
                 const HijriDateCard(),
                 const SizedBox(height: 16),
-                if (prayers.nextPrayer != null)
+                if (location.isLoading)
+                  const CircularProgressIndicator()
+                else if (prayers.nextPrayer != null)
                   NextPrayerBanner(
                     prayer: prayers.nextPrayer!,
                     timeToNext: prayers.timeToNext,
-                  )
-                else
-                  const CircularProgressIndicator(),
+                  ),
                 const SizedBox(height: 16),
               ],
             ),
