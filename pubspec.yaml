@@ -1,0 +1,62 @@
+name: salah
+description: Application de prière islamique - Horaires, Qibla, Adhan et Calendrier hégirien
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Prayer times calculation
+  adhan: ^1.1.0
+
+  # Location
+  geolocator: ^11.0.0
+  geocoding: ^3.0.0
+
+  # Qibla compass
+  flutter_compass: ^0.8.0
+  flutter_qiblah: ^2.1.0
+
+  # Notifications
+  flutter_local_notifications: ^17.0.0
+  timezone: ^0.9.0
+
+  # Hijri calendar
+  hijri: ^2.0.1
+
+  # State management
+  provider: ^6.1.0
+
+  # Storage
+  shared_preferences: ^2.2.0
+
+  # Permissions
+  permission_handler: ^11.0.0
+
+  # UI
+  flutter_svg: ^2.0.9
+  lottie: ^3.0.0
+  intl: ^0.19.0
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/sounds/
+
+  fonts:
+    - family: Amiri
+      fonts:
+        - asset: assets/fonts/Amiri-Regular.ttf
+        - asset: assets/fonts/Amiri-Bold.ttf
+          weight: 700
