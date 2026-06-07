@@ -42,6 +42,21 @@ class AppColors {
 class AppFonts {
   AppFonts._();
 
+  static TextStyle arabic({
+    Color? color,
+    double? fontSize,
+    FontWeight? fontWeight,
+    double? height,
+  }) =>
+      GoogleFonts.notoNaskhArabic(
+        textStyle: TextStyle(
+          color: color,
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          height: height,
+        ),
+      );
+
   static TextStyle mono({
     Color? color,
     double? fontSize,

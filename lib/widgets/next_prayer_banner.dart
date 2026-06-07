@@ -89,12 +89,11 @@ class NextPrayerBanner extends StatelessWidget {
                       // Arabic name — large, left-anchored
                       Text(
                         prayer.name.arabicName,
-                        style: const TextStyle(
+                        style: AppFonts.arabic(
                           color: AppColors.gold,
                           fontSize: 40,
                           fontWeight: FontWeight.bold,
                           height: 1,
-                          letterSpacing: 0.5,
                         ),
                       )
                           .animate()

@@ -96,7 +96,7 @@ class PrayerTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   prayer.name.arabicName,
-                  style: TextStyle(
+                  style: AppFonts.arabic(
                     color: prayer.isNext
                         ? AppColors.gold.withOpacity(0.7)
                         : AppColors.textMuted,
