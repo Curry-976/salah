@@ -20,6 +20,26 @@ class HijriDate {
   String format() => '$day $monthName $year';
   String formatMonthYear() => '$monthName $year';
 
+  DateTime toGregorian() {
+    final daysFromEpoch = _yearStart(year) + _monthOffset(month) + day - 1;
+    final jdn = daysFromEpoch + _epoch;
+    return _fromJDN(jdn);
+  }
+
+  static DateTime _fromJDN(int jdn) {
+    final l = jdn + 68569;
+    final n = (4 * l) ~/ 146097;
+    final l2 = l - (146097 * n + 3) ~/ 4;
+    final i = (4000 * (l2 + 1)) ~/ 1461001;
+    final l3 = l2 - (1461 * i) ~/ 4 + 31;
+    final j = (80 * l3) ~/ 2447;
+    final d = l3 - (2447 * j) ~/ 80;
+    final l4 = j ~/ 11;
+    final m = j + 2 - 12 * l4;
+    final y = 100 * (n - 49) + i + l4;
+    return DateTime(y, m, d);
+  }
+
   static HijriDate fromGregorian(DateTime date) {
     final jdn = _toJDN(date.year, date.month, date.day);
     final d = jdn - _epoch;

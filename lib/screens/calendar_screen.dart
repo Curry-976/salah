@@ -21,8 +21,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _selectedDay = DateTime.now();
   }
 
-  HijriDate _toHijri(DateTime date) =>
-      HijriDate.fromGregorian(date);
+  HijriDate _toHijri(DateTime date) => HijriDate.fromGregorian(date);
 
   @override
   Widget build(BuildContext context) {
@@ -30,30 +29,31 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final hijriSelected = _toHijri(_selectedDay);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calendrier Hégirien'),
-      ),
-      body: Column(
-        children: [
-          _HijriHeader(hijri: hijriToday),
-          _MonthNavigator(
-            focusedDay: _focusedDay,
-            onPrevious: () => setState(
-                () => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1)),
-            onNext: () => setState(
-                () => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1)),
-          ),
-          _CalendarGrid(
-            focusedDay: _focusedDay,
-            selectedDay: _selectedDay,
-            onDaySelected: (day) => setState(() => _selectedDay = day),
-            toHijri: _toHijri,
-          ),
-          const Divider(),
-          _SelectedDayInfo(gregorian: _selectedDay, hijri: hijriSelected),
-          const SizedBox(height: 16),
-          const _IslamicEventsCard(),
-        ],
+      appBar: AppBar(title: const Text('Calendrier Hégirien')),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _HijriHeader(hijri: hijriToday),
+            _MonthNavigator(
+              focusedDay: _focusedDay,
+              onPrevious: () => setState(
+                  () => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1)),
+              onNext: () => setState(
+                  () => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1)),
+            ),
+            _CalendarGrid(
+              focusedDay: _focusedDay,
+              selectedDay: _selectedDay,
+              onDaySelected: (day) => setState(() => _selectedDay = day),
+              toHijri: _toHijri,
+            ),
+            const Divider(),
+            _SelectedDayInfo(gregorian: _selectedDay, hijri: hijriSelected),
+            const SizedBox(height: 8),
+            const _IslamicEventsCard(),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -127,9 +127,7 @@ class _MonthNavigator extends StatelessWidget {
               ),
               Text(
                 hijri.formatMonthYear(),
-                style: TextStyle(
-                    color: AppColors.gold,
-                    fontSize: 13),
+                style: const TextStyle(color: AppColors.gold, fontSize: 13),
               ),
             ],
           ),
@@ -156,9 +154,8 @@ class _CalendarGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firstDay = DateTime(focusedDay.year, focusedDay.month, 1);
-    final daysInMonth =
-        DateTime(focusedDay.year, focusedDay.month + 1, 0).day;
-    final startWeekday = (firstDay.weekday % 7); // Sunday = 0
+    final daysInMonth = DateTime(focusedDay.year, focusedDay.month + 1, 0).day;
+    final startWeekday = firstDay.weekday % 7; // Sunday = 0
 
     final weekdays = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
@@ -197,6 +194,9 @@ class _CalendarGrid extends StatelessWidget {
               final isToday = day.day == DateTime.now().day &&
                   day.month == DateTime.now().month &&
                   day.year == DateTime.now().year;
+              final hasEvent = _islamicEventDays.any(
+                (e) => e.$1 == hijri.month && e.$2 == hijri.day,
+              );
 
               return GestureDetector(
                 onTap: () => onDaySelected(day),
@@ -232,6 +232,16 @@ class _CalendarGrid extends StatelessWidget {
                               : AppColors.gold,
                         ),
                       ),
+                      if (hasEvent)
+                        Container(
+                          width: 5,
+                          height: 5,
+                          margin: const EdgeInsets.only(top: 1),
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.white : AppColors.gold,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -242,6 +252,13 @@ class _CalendarGrid extends StatelessWidget {
       ),
     );
   }
+
+  // (month, day) pairs for Islamic event markers
+  static const _islamicEventDays = [
+    (1, 1), (1, 10), (3, 12), (7, 27),
+    (8, 15), (9, 1), (9, 27), (10, 1),
+    (12, 9), (12, 10),
+  ];
 }
 
 class _SelectedDayInfo extends StatelessWidget {
@@ -286,21 +303,39 @@ class _SelectedDayInfo extends StatelessWidget {
 class _IslamicEventsCard extends StatelessWidget {
   const _IslamicEventsCard();
 
-  static const _events = [
-    ('1 Muharram', 'Nouvel an hégirien'),
-    ('10 Muharram', 'Achoura'),
-    ('12 Rabi al-Awwal', 'Mawlid an-Nabawi'),
-    ('27 Rajab', 'Laylat al-Miraj'),
-    ('15 Shaaban', 'Laylat al-Baraat'),
-    ('1 Ramadan', 'Début du Ramadan'),
-    ('27 Ramadan', 'Laylat al-Qadr (estimée)'),
-    ('1 Chawwal', 'Aïd el-Fitr'),
-    ('9 Dhul Hijja', 'Jour d\'Arafat'),
-    ('10 Dhul Hijja', 'Aïd el-Adha'),
+  // (hijriMonth, hijriDay, name)
+  static const _defs = [
+    (1,  1,  'Nouvel an hégirien'),
+    (1,  10, 'Achoura'),
+    (3,  12, 'Mawlid an-Nabawi'),
+    (7,  27, 'Laylat al-Miraj'),
+    (8,  15, "Laylat al-Baraat"),
+    (9,  1,  'Début du Ramadan'),
+    (9,  27, 'Laylat al-Qadr (estimée)'),
+    (10, 1,  'Aïd el-Fitr'),
+    (12, 9,  "Jour d'Arafat"),
+    (12, 10, 'Aïd el-Adha'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final hijriYear = HijriDate.fromGregorian(now).year;
+    final fmt = DateFormat('d MMM yyyy', 'fr_FR');
+
+    // Compute Gregorian date for each event; if already past, use next hijri year
+    final events = _defs.map((def) {
+      final (hm, hd, name) = def;
+      var greg = HijriDate(hijriYear, hm, hd).toGregorian();
+      var hy = hijriYear;
+      if (greg.isBefore(DateTime(now.year, now.month, now.day))) {
+        hy = hijriYear + 1;
+        greg = HijriDate(hy, hm, hd).toGregorian();
+      }
+      return (name: name, hijri: HijriDate(hy, hm, hd), greg: greg);
+    }).toList()
+      ..sort((a, b) => a.greg.compareTo(b.greg));
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
@@ -315,13 +350,19 @@ class _IslamicEventsCard extends StatelessWidget {
               ),
             ),
             const Divider(height: 1),
-            for (final (date, name) in _events)
+            for (final e in events)
               ListTile(
                 dense: true,
                 leading: const Icon(Icons.star, color: AppColors.gold, size: 18),
-                title: Text(name),
-                trailing: Text(date,
-                    style: const TextStyle(color: AppColors.gold, fontSize: 12)),
+                title: Text(e.name),
+                subtitle: Text(
+                  e.hijri.format(),
+                  style: const TextStyle(fontSize: 11, color: AppColors.gold),
+                ),
+                trailing: Text(
+                  fmt.format(e.greg),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
               ),
           ],
         ),

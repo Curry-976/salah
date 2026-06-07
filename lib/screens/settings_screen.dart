@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:adhan/adhan.dart';
 import '../services/prayer_service.dart';
+import '../services/location_service.dart';
 import '../models/prayer_model.dart';
 import '../utils/theme.dart';
 
@@ -18,7 +19,7 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _MayotteInfoCard(),
+          const _LocationInfoCard(),
           const SizedBox(height: 16),
           _SectionHeader('Calcul des horaires'),
           Card(
@@ -34,7 +35,9 @@ class SettingsScreen extends StatelessWidget {
                 ListTile(
                   title: const Text('École juridique (Asr)'),
                   subtitle: Text(
-                      settings.madhab == Madhab.hanafi ? 'Hanafi' : "Shafi'i / Maliki / Hanbali"),
+                      settings.madhab == Madhab.hanafi
+                          ? 'Hanafi'
+                          : "Shafi'i / Maliki / Hanbali"),
                   trailing: Switch(
                     value: settings.madhab == Madhab.hanafi,
                     activeColor: AppColors.green,
@@ -57,31 +60,9 @@ class SettingsScreen extends StatelessWidget {
               value: settings.notificationsEnabled,
               activeColor: AppColors.green,
               onChanged: (val) {
-                prayers.updateSettings(settings.copyWith(notificationsEnabled: val));
+                prayers.updateSettings(
+                    settings.copyWith(notificationsEnabled: val));
               },
-            ),
-          ),
-          const SizedBox(height: 16),
-          _SectionHeader('Méthodes disponibles'),
-          Card(
-            child: Column(
-              children: CalculationMethod.values
-                  .where((m) => m != CalculationMethod.other)
-                  .map((m) => ListTile(
-                        dense: true,
-                        title: Text(_methodName(m)),
-                        leading: Radio<CalculationMethod>(
-                          value: m,
-                          groupValue: settings.method,
-                          activeColor: AppColors.green,
-                          onChanged: (val) {
-                            if (val != null) {
-                              prayers.updateSettings(settings.copyWith(method: val));
-                            }
-                          },
-                        ),
-                      ))
-                  .toList(),
             ),
           ),
         ],
@@ -89,35 +70,22 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  String _methodName(CalculationMethod method) {
-    switch (method) {
-      case CalculationMethod.muslim_world_league:
-        return 'Ligue Mondiale Musulmane';
-      case CalculationMethod.egyptian:
-        return 'Autorité Générale Égyptienne';
-      case CalculationMethod.karachi:
-        return 'Université des Sciences Islamiques, Karachi';
-      case CalculationMethod.umm_al_qura:
-        return 'Umm Al-Qura, Mecque';
-      case CalculationMethod.dubai:
-        return 'Dubai';
-      case CalculationMethod.moon_sighting_committee:
-        return 'Comité de vision de la lune';
-      case CalculationMethod.north_america:
-        return 'Amérique du Nord (ISNA)';
-      case CalculationMethod.kuwait:
-        return 'Koweït';
-      case CalculationMethod.qatar:
-        return 'Qatar';
-      case CalculationMethod.singapore:
-        return 'Singapour';
-      case CalculationMethod.turkey:
-        return 'Turquie';
-      case CalculationMethod.tehran:
-        return 'Téhéran';
-      default:
-        return method.name;
-    }
+  static String _methodName(CalculationMethod method) {
+    const names = {
+      CalculationMethod.muslim_world_league: 'Ligue Mondiale Musulmane',
+      CalculationMethod.egyptian: 'Autorité Générale Égyptienne',
+      CalculationMethod.karachi: 'Université des Sciences Islamiques, Karachi',
+      CalculationMethod.umm_al_qura: 'Umm Al-Qura, Mecque',
+      CalculationMethod.dubai: 'Dubaï',
+      CalculationMethod.moon_sighting_committee: 'Comité de vision de la lune',
+      CalculationMethod.north_america: 'Amérique du Nord (ISNA)',
+      CalculationMethod.kuwait: 'Koweït',
+      CalculationMethod.qatar: 'Qatar',
+      CalculationMethod.singapore: 'Singapour',
+      CalculationMethod.turkey: 'Turquie',
+      CalculationMethod.tehran: 'Téhéran',
+    };
+    return names[method] ?? method.name;
   }
 
   void _showMethodPicker(BuildContext context, PrayerService prayers) {
@@ -128,9 +96,23 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-class _MayotteInfoCard extends StatelessWidget {
+class _LocationInfoCard extends StatelessWidget {
+  const _LocationInfoCard();
+
   @override
   Widget build(BuildContext context) {
+    final location = context.watch<LocationService>();
+    final isGps = !location.isUsingFallback && location.hasLocation;
+
+    final title = isGps
+        ? (location.cityName.isNotEmpty ? location.cityName : 'Position GPS')
+        : 'Mayotte — Mamoudzou';
+
+    final subtitle = location.hasLocation
+        ? 'Lat. ${location.latitude!.toStringAsFixed(4)}° · '
+          'Long. ${location.longitude!.toStringAsFixed(4)}° · UTC+3'
+        : 'Lat. -12.7806° · Long. 45.2278° · UTC+3';
+
     return Card(
       color: AppColors.green.withOpacity(0.1),
       child: Padding(
@@ -143,15 +125,26 @@ class _MayotteInfoCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Mayotte — Mamoudzou',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.green,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.green,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        isGps ? Icons.gps_fixed : Icons.location_off_outlined,
+                        size: 14,
+                        color: isGps ? AppColors.green : Colors.grey,
+                      ),
+                    ],
                   ),
                   Text(
-                    'Lat. -12.7806° · Long. 45.2278° · UTC+3',
+                    subtitle,
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
@@ -185,7 +178,7 @@ class _MethodPickerSheet extends StatelessWidget {
               children: CalculationMethod.values
                   .where((m) => m != CalculationMethod.other)
                   .map((m) => ListTile(
-                        title: Text(_name(m)),
+                        title: Text(SettingsScreen._methodName(m)),
                         trailing: prayers.settings.method == m
                             ? const Icon(Icons.check, color: AppColors.green)
                             : null,
@@ -201,23 +194,6 @@ class _MethodPickerSheet extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _name(CalculationMethod m) {
-    const names = {
-      CalculationMethod.muslim_world_league: 'Ligue Mondiale Musulmane',
-      CalculationMethod.egyptian: 'Égypte',
-      CalculationMethod.karachi: 'Karachi',
-      CalculationMethod.umm_al_qura: 'Umm Al-Qura',
-      CalculationMethod.dubai: 'Dubai',
-      CalculationMethod.north_america: 'Amérique du Nord',
-      CalculationMethod.kuwait: 'Koweït',
-      CalculationMethod.qatar: 'Qatar',
-      CalculationMethod.singapore: 'Singapour',
-      CalculationMethod.turkey: 'Turquie',
-      CalculationMethod.tehran: 'Téhéran',
-    };
-    return names[m] ?? m.name;
   }
 }
 
