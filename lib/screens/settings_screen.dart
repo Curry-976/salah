@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:adhan/adhan.dart';
 import '../services/prayer_service.dart';
-import '../services/location_service.dart';
 import '../models/prayer_model.dart';
 import '../utils/theme.dart';
 
@@ -19,6 +18,8 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _MayotteInfoCard(),
+          const SizedBox(height: 16),
           _SectionHeader('Calcul des horaires'),
           Card(
             child: Column(
@@ -32,8 +33,8 @@ class SettingsScreen extends StatelessWidget {
                 const Divider(height: 1),
                 ListTile(
                   title: const Text('École juridique (Asr)'),
-                  subtitle:
-                      Text(settings.madhab == Madhab.hanafi ? 'Hanafi' : 'Shafi\'i / Maliki / Hanbali'),
+                  subtitle: Text(
+                      settings.madhab == Madhab.hanafi ? 'Hanafi' : "Shafi'i / Maliki / Hanbali"),
                   trailing: Switch(
                     value: settings.madhab == Madhab.hanafi,
                     activeColor: AppColors.green,
@@ -123,6 +124,42 @@ class SettingsScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       builder: (_) => _MethodPickerSheet(prayers: prayers),
+    );
+  }
+}
+
+class _MayotteInfoCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.green.withOpacity(0.1),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const Text('🇾🇹', style: TextStyle(fontSize: 28)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Mayotte — Mamoudzou',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.green,
+                    ),
+                  ),
+                  Text(
+                    'Lat. -12.7806° · Long. 45.2278° · UTC+3',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

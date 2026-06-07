@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/location_service.dart';
@@ -34,13 +34,11 @@ class _HomeScreenState extends State<HomeScreen> {
     await prayerService.loadSettings();
     await locationService.fetchLocation();
 
-    if (locationService.hasLocation) {
-      await prayerService.calculate(
-        locationService.latitude!,
-        locationService.longitude!,
-      );
-      _startCountdown();
-    }
+    await prayerService.calculate(
+      locationService.latitude,
+      locationService.longitude,
+    );
+    _startCountdown();
   }
 
   void _startCountdown() {
@@ -101,7 +99,6 @@ class _PrayerHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final location = context.watch<LocationService>();
     final prayers = context.watch<PrayerService>();
 
     return CustomScrollView(
@@ -109,27 +106,13 @@ class _PrayerHome extends StatelessWidget {
         SliverAppBar(
           expandedHeight: 120,
           pinned: true,
-          flexibleSpace: FlexibleSpaceBar(
+          flexibleSpace: const FlexibleSpaceBar(
             title: Text(
-              location.cityName.isNotEmpty ? location.cityName : 'Salah',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              'Mayotte',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             centerTitle: true,
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () async {
-                await location.fetchLocation();
-                if (location.hasLocation) {
-                  await prayers.calculate(
-                    location.latitude!,
-                    location.longitude!,
-                  );
-                }
-              },
-            ),
-          ],
         ),
         SliverToBoxAdapter(
           child: Padding(
@@ -138,15 +121,13 @@ class _PrayerHome extends StatelessWidget {
               children: [
                 const HijriDateCard(),
                 const SizedBox(height: 16),
-                if (location.error.isNotEmpty)
-                  _ErrorCard(message: location.error)
-                else if (location.isLoading)
-                  const CircularProgressIndicator()
-                else if (prayers.nextPrayer != null)
+                if (prayers.nextPrayer != null)
                   NextPrayerBanner(
                     prayer: prayers.nextPrayer!,
                     timeToNext: prayers.timeToNext,
-                  ),
+                  )
+                else
+                  const CircularProgressIndicator(),
                 const SizedBox(height: 16),
               ],
             ),
@@ -159,34 +140,6 @@ class _PrayerHome extends StatelessWidget {
           ),
         const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
       ],
-    );
-  }
-}
-
-class _ErrorCard extends StatelessWidget {
-  final String message;
-  const _ErrorCard({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(Icons.error_outline,
-                color: Theme.of(context).colorScheme.error),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
