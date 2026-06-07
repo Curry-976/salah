@@ -81,7 +81,10 @@ class _QiblaCompass extends StatelessWidget {
             ),
             Text(
               '${qiblah.direction.toStringAsFixed(1)}° depuis le Nord',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: AppFonts.mono(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 48),
             SizedBox(

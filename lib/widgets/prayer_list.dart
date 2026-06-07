@@ -114,7 +114,7 @@ class PrayerTile extends StatelessWidget {
               children: [
                 Text(
                   PrayerFormatter.formatTime(prayer.time),
-                  style: TextStyle(
+                  style: AppFonts.mono(
                     color: prayer.isNext
                         ? AppColors.gold
                         : prayer.isPast
@@ -123,7 +123,6 @@ class PrayerTile extends StatelessWidget {
                     fontSize: 19,
                     fontWeight:
                         prayer.isNext ? FontWeight.w700 : FontWeight.w500,
-                    fontFamily: 'monospace',
                     letterSpacing: -0.5,
                   ),
                 ),

@@ -123,11 +123,10 @@ class NextPrayerBanner extends StatelessWidget {
                           const SizedBox(width: 10),
                           Text(
                             PrayerFormatter.formatCountdown(timeToNext),
-                            style: const TextStyle(
+                            style: AppFonts.mono(
                               color: AppColors.textPrimary,
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
-                              fontFamily: 'monospace',
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -144,13 +143,12 @@ class NextPrayerBanner extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 2),
                   child: Text(
                     PrayerFormatter.formatTime(prayer.time),
-                    style: const TextStyle(
+                    style: AppFonts.mono(
                       color: AppColors.textPrimary,
                       fontSize: 52,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -2.5,
                       height: 1,
-                      fontFamily: 'monospace',
                     ),
                   )
                       .animate()

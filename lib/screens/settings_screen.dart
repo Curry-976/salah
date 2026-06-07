@@ -145,7 +145,11 @@ class _LocationInfoCard extends StatelessWidget {
                   ),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: AppFonts.mono(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ],
               ),

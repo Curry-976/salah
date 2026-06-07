@@ -37,6 +37,29 @@ class AppColors {
   static const prayerUpcoming = green;
 }
 
+// ── Monospace font helper ─────────────────────────────────────────────────────
+
+class AppFonts {
+  AppFonts._();
+
+  static TextStyle mono({
+    Color? color,
+    double? fontSize,
+    FontWeight? fontWeight,
+    double? letterSpacing,
+    double? height,
+  }) =>
+      GoogleFonts.dmMono(
+        textStyle: TextStyle(
+          color: color,
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          letterSpacing: letterSpacing,
+          height: height,
+        ),
+      );
+}
+
 // ── Themes ────────────────────────────────────────────────────────────────────
 
 class AppTheme {
