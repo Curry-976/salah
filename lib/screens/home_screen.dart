@@ -78,34 +78,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgDark,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: 430,
-            minHeight: mq.size.height,
-          ),
-          child: MediaQuery(
-            // Reserve space for the floating nav bar in all child screens
-            data: mq.copyWith(
-              padding: mq.padding.copyWith(bottom: 96),
-            ),
-            child: Stack(
-              children: [
-                IndexedStack(index: _currentIndex, children: screens),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: _FloatingNav(
-                    items: _navItems,
-                    currentIndex: _currentIndex,
-                    onTap: (i) => setState(() => _currentIndex = i),
-                  ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final colW = constraints.maxWidth.clamp(0.0, 430.0);
+          return Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: colW,
+              height: constraints.maxHeight,
+              child: MediaQuery(
+                // Reserve space for the floating nav bar in all child screens
+                data: mq.copyWith(
+                  padding: mq.padding.copyWith(bottom: 96),
                 ),
-              ],
+                child: Stack(
+                  children: [
+                    IndexedStack(index: _currentIndex, children: screens),
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: _FloatingNav(
+                        items: _navItems,
+                        currentIndex: _currentIndex,
+                        onTap: (i) => setState(() => _currentIndex = i),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
