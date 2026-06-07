@@ -138,23 +138,20 @@ class NextPrayerBanner extends StatelessWidget {
 
                 const SizedBox(width: 8),
 
-                // ── RIGHT: time — 68px, overflows 20px below container ───
-                Transform.translate(
-                  offset: const Offset(0, 44),
-                  child: Text(
-                    PrayerFormatter.formatTime(prayer.time),
-                    style: AppFonts.mono(
-                      color: AppColors.textPrimary,
-                      fontSize: 68,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -3,
-                      height: 1,
-                    ),
-                  )
-                      .animate()
-                      .fadeIn(duration: 560.ms, delay: 200.ms)
-                      .slideY(begin: 0.10, end: 0, duration: 560.ms, delay: 200.ms, curve: Curves.easeOut),
-                ),
+                // ── RIGHT: prayer time ───────────────────────────────────
+                Text(
+                  PrayerFormatter.formatTime(prayer.time),
+                  style: AppFonts.mono(
+                    color: AppColors.textPrimary,
+                    fontSize: 68,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -3,
+                    height: 1,
+                  ),
+                )
+                    .animate()
+                    .fadeIn(duration: 560.ms, delay: 200.ms)
+                    .slideY(begin: 0.10, end: 0, duration: 560.ms, delay: 200.ms, curve: Curves.easeOut),
               ],
             ),
           ),
